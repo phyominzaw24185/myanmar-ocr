@@ -65,10 +65,8 @@ details summary{cursor:pointer;font-weight:600}
     <input type="password" id="key" placeholder="AIza..." autocomplete="off">
     <p class="hint">aistudio.google.com/apikey မှာ အခမဲ့ ယူနိုင်ပါတယ်။ Key ကို ဒီဖုန်း browser ထဲမှာပဲ သိမ်းပါတယ်။ လက်ရေးစာအတွက် AI ကို အကြံပြုပါတယ်။</p>
     <label for="model">Model</label>
-    <select id="model">
-      <option value="gemini-2.5-flash">gemini-2.5-flash (မြန်/အခမဲ့ကောင်း)</option>
-      <option value="gemini-2.5-pro">gemini-2.5-pro (ပိုတိကျ/ပိုနှေး)</option>
-    </select>
+    <input id="model" list="modelList" placeholder="gemini-3.8-flash" autocomplete="off">
+    <datalist id="modelList"><option value="gemini-3.8-flash"><option value="gemini-3.8-pro"></datalist>
   </div>
   <div id="offBox" style="display:none">
     <p class="hint">Internet ပထမဆုံးတစ်ခါ language data (~ဆယ်ဂဏန်း MB) ဒေါင်းပြီးနောက် အခမဲ့သုံးနိုင်ပါတယ်။ စာနှိပ်စာလုံး (print) အတွက်သာ သင့်တော်ပြီး လက်ရေးစာကို မကောင်းပါ။</p>
@@ -173,7 +171,9 @@ function showEngine(){
   $('engAI').classList.toggle('on',engine==='ai');$('engOff').classList.toggle('on',engine!=='ai');
   $('aiBox').style.display=engine==='ai'?'':'none';$('offBox').style.display=engine==='ai'?'none':'';
 }
-$('key').value=LS.get('gkey','');$('model').value=LS.get('gmodel','gemini-2.5-flash');showEngine();
+const DEF_MODEL='gemini-3.8-flash';
+function getModel(){const m=LS.get('gmodel','');return (!m||/^gemini-2\./.test(m))?DEF_MODEL:m}
+$('key').value=LS.get('gkey','');$('model').value=getModel();showEngine();
 $('btnSettings').onclick=()=>{const s=$('settings');s.style.display=s.style.display==='none'?'':'none'};
 $('engAI').onclick=()=>{engine='ai';showEngine()};
 $('engOff').onclick=()=>{engine='off';showEngine()};
@@ -377,9 +377,9 @@ const MATH_TEX=`
 const MATH_END=`
 - ရလဒ်မှာ ရေးထားတဲ့ စာသားသက်သက်သာ ပေးပါ။ ရှင်းလင်းချက်၊ markdown၊ code block မထည့်ပါနဲ့။`;
 function buildPrompt(){return PROMPT_BASE+(($('mathMode')&&$('mathMode').value==='tex')?MATH_TEX:MATH_UNI)+MATH_END}
-async function gemini(parts,cfg){
+async function gemini(parts,cfg,retried){
   const key=LS.get('gkey','');if(!key) throw new Error('Settings မှာ Gemini API Key အရင်ထည့်ပါ');
-  const model=LS.get('gmodel','gemini-2.5-flash');
+  const model=getModel();
   let r;
   try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
     method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
@@ -387,6 +387,8 @@ async function gemini(parts,cfg){
   }catch(e){throw new Error('Google (Gemini) ကို ချိတ်ဆက်မရပါ။ ဒီဖိုင်ကို preview/ဖိုင်ကြည့်တဲ့နေရာမှာ ဖွင့်ထားရင် network ပိတ်ထားတတ်ပါတယ်။ Netlify လို website အဖြစ်တင်ပြီး Safari/Chrome မှာ ဖွင့်ပါ။ (internet စစ်ပါ၊ VPN ရှိရင် ပိတ်ပါ)')}
   const j=await r.json().catch(()=>({}));
   if(!r.ok){const m=(j.error&&j.error.message)||('HTTP '+r.status);
+    const alt=!retried&&/no longer available|not found|not supported/i.test(m)&&(m.match(/use\s+models\/([\w.\-]+)/i)||[])[1];
+    if(alt&&alt!==model){LS.set('gmodel',alt);if($('model'))$('model').value=alt;return gemini(parts,cfg,true)}
     throw new Error(r.status===400&&/API key/i.test(m)?'API Key မမှန်ပါ':r.status===429?'ခဏစောင့်ပြီး ပြန်စမ်းပါ (quota ပြည့်နေ)':m)}
   const cand=j.candidates&&j.candidates[0];
   const t=cand&&cand.content&&cand.content.parts?cand.content.parts.map(p=>p.text||'').join(''):'';
