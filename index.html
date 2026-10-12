@@ -383,7 +383,17 @@ const MATH_TEX=`
 const MATH_END=`
 - ရလဒ်မှာ ရေးထားတဲ့ စာသားသက်သက်သာ ပေးပါ။ ရှင်းလင်းချက်၊ markdown၊ code block မထည့်ပါနဲ့။`;
 function buildPrompt(){return PROMPT_BASE+(($('mathMode')&&$('mathMode').value==='tex')?MATH_TEX:MATH_UNI)+MATH_END}
-async function gemini(parts,cfg,retried){
+async function gemini(parts,cfg){
+  const wait=[3,6,12,20];
+  for(let i=0;;i++){
+    try{return await geminiOnce(parts,cfg)}
+    catch(e){
+      if(!e.busy||i>=wait.length) throw e;
+      for(let k=wait[i];k>0;k--){setStatus(`Gemini လူများနေလို့ ${k} စက္ကန့်စောင့်ပြီး ပြန်စမ်းမယ် (${i+1}/${wait.length})...`);await new Promise(r=>setTimeout(r,1000))}
+    }
+  }
+}
+async function geminiOnce(parts,cfg,retried){
   const key=LS.get('gkey','');if(!key) throw new Error('Settings မှာ Gemini API Key အရင်ထည့်ပါ');
   const model=getModel();
   let r;
@@ -394,7 +404,8 @@ async function gemini(parts,cfg,retried){
   const j=await r.json().catch(()=>({}));
   if(!r.ok){const m=(j.error&&j.error.message)||('HTTP '+r.status);
     const alt=!retried&&/no longer available|not found|not supported/i.test(m)&&(m.match(/use\s+models\/([\w.\-]+)/i)||[])[1];
-    if(alt&&alt!==model){LS.set('gmodel',alt);if($('model'))$('model').value=alt;return gemini(parts,cfg,true)}
+    if(alt&&alt!==model){LS.set('gmodel',alt);if($('model'))$('model').value=alt;return geminiOnce(parts,cfg,true)}
+    if(r.status===503||/high demand|overloaded|UNAVAILABLE/i.test(m)){const e=new Error('Gemini လူအရမ်းများနေပါတယ် — ခဏနေမှ ပြန်စမ်းပါ၊ ဒါမှမဟုတ် Settings မှာ အခြား model ပြောင်းပါ');e.busy=true;throw e}
     throw new Error(r.status===400&&/API key/i.test(m)?'API Key မမှန်ပါ':r.status===429?'ခဏစောင့်ပြီး ပြန်စမ်းပါ (quota ပြည့်နေ)':m)}
   const cand=j.candidates&&j.candidates[0];
   const t=cand&&cand.content&&cand.content.parts?cand.content.parts.map(p=>p.text||'').join(''):'';
