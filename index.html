@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>မြန်မာစာ စကင်ဖတ်</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef6f8;--card:#fff;--ink:#12303a;--mute:#5d7a85;--pri:#0f9aa8;--pri2:#0a7480;--line:#d5e5ea;--warn:#c2410c;--ok:#15803d}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#dff1f5,#f4fafb 40%);color:var(--ink);font-family:"Noto Sans Myanmar","Padauk","Myanmar Text",system-ui,sans-serif;line-height:1.8;min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+.wrap{max-width:680px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;padding:6px 0 14px}
+h1{font-size:21px;margin:0;font-weight:700}
+h1 small{display:block;font-size:12px;color:var(--mute);font-weight:400}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 4px 18px rgba(15,100,120,.07)}
+.step{display:inline-block;background:var(--pri);color:#fff;font-size:11px;font-weight:700;border-radius:99px;padding:0 10px;margin-bottom:6px;line-height:20px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+button,.btn{font:inherit;font-size:15px;border:0;border-radius:12px;padding:10px 16px;background:var(--pri);color:#fff;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;line-height:1.5}
+button:active,.btn:active{background:var(--pri2)}
+button.ghost,.btn.ghost{background:#e6f3f6;color:var(--pri2)}
+button:disabled{opacity:.5}
+.row>.grow{flex:1}
+.drop{border:2px dashed #9cc9d2;border-radius:14px;padding:22px;text-align:center;color:var(--mute);background:#f7fcfd}
+.drop.over{background:#e0f4f7}
+#preview{display:none;margin-top:12px}
+#preview .imgbox{background:#0b1f26;border-radius:12px;overflow:hidden;text-align:center}
+#preview img{max-width:100%;max-height:340px;transition:transform .2s}
+select,input[type=password],input[type=text]{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;width:100%;background:#fff;color:var(--ink)}
+label{font-size:13px;color:var(--mute);display:block;margin:8px 0 2px}
+.seg{display:flex;background:#e6f3f6;border-radius:12px;padding:3px;margin-bottom:8px}
+.seg button{flex:1;background:transparent;color:var(--pri2);padding:8px 6px;font-size:14px}
+.seg button.on{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.hint{font-size:12.5px;color:var(--mute)}
+textarea{width:100%;min-height:260px;font:inherit;font-size:16px;line-height:2;border:1px solid var(--line);border-radius:12px;padding:12px;resize:vertical;color:var(--ink)}
+.prog{height:8px;background:#dcedf1;border-radius:99px;overflow:hidden;margin:10px 0 4px;display:none}
+.prog i{display:block;height:100%;width:0;background:var(--pri);transition:width .3s}
+#status{font-size:13.5px;color:var(--mute);min-height:22px}
+#status.err{color:var(--warn)}#status.ok{color:var(--ok)}
+details summary{cursor:pointer;font-weight:600}
+.hist{border-top:1px solid var(--line);padding:8px 0;display:flex;gap:8px;align-items:center}
+.hist span{flex:1;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist small{color:var(--mute);display:block;font-size:11px}
+.hist button{padding:4px 10px;font-size:13px}
+.thumb{flex:0 0 54px;height:54px;border-radius:8px;object-fit:cover;border:2px solid transparent;opacity:.7}.thumb.on{border-color:var(--pri);opacity:1}
+.syms{display:flex;gap:6px;overflow-x:auto;padding:8px 0 2px;-webkit-overflow-scrolling:touch}.syms button{flex:0 0 auto;min-width:40px;padding:6px 10px;font-size:17px;background:#e6f3f6;color:var(--pri2);font-weight:600;font-family:system-ui,"Noto Sans Myanmar",sans-serif}
+.count{font-size:12px;color:var(--mute);text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>မြန်မာစာ စကင်ဖတ်<small>ဓာတ်ပုံထဲက မြန်မာစာကို စာသားအဖြစ် ပြောင်းပေးမယ်</small></h1>
+  <button class="ghost" id="btnSettings">⚙ ဆက်တင်</button>
+</header>
+
+<section class="card" id="settings" style="display:none">
+  <div class="seg">
+    <button id="engAI" class="on">AI (Gemini) – တိကျ</button>
+    <button id="engOff">Offline (Tesseract)</button>
+  </div>
+  <div id="aiBox">
+    <label for="key">Gemini API Key</label>
+    <input type="password" id="key" placeholder="AIza..." autocomplete="off">
+    <p class="hint">aistudio.google.com/apikey မှာ အခမဲ့ ယူနိုင်ပါတယ်။ Key ကို ဒီဖုန်း browser ထဲမှာပဲ သိမ်းပါတယ်။ လက်ရေးစာအတွက် AI ကို အကြံပြုပါတယ်။</p>
+    <label for="model">Model</label>
+    <select id="model">
+      <option value="gemini-2.5-flash">gemini-2.5-flash (မြန်/အခမဲ့ကောင်း)</option>
+      <option value="gemini-2.5-pro">gemini-2.5-pro (ပိုတိကျ/ပိုနှေး)</option>
+    </select>
+  </div>
+  <div id="offBox" style="display:none">
+    <p class="hint">Internet ပထမဆုံးတစ်ခါ language data (~ဆယ်ဂဏန်း MB) ဒေါင်းပြီးနောက် အခမဲ့သုံးနိုင်ပါတယ်။ စာနှိပ်စာလုံး (print) အတွက်သာ သင့်တော်ပြီး လက်ရေးစာကို မကောင်းပါ။</p>
+  </div>
+  <button id="saveSet" style="margin-top:8px">သိမ်းမယ်</button>
+</section>
+
+<section class="card">
+  <span class="step">STEP 1</span>
+  <div style="font-weight:700">ဓာတ်ပုံ ရွေးပါ <span class="hint">(စာမျက်နှာ အများကြီး ထည့်လို့ရ)</span></div>
+  <div class="drop" id="drop">
+    <div class="row" style="justify-content:center">
+      <label class="btn grow" style="margin:0;color:#fff">🖼 Gallery<input type="file" id="fGal" accept="image/*" multiple hidden></label>
+      <label class="btn ghost grow" style="margin:0;color:var(--pri2)">📷 Camera<input type="file" id="fCam" accept="image/*" capture="environment" hidden></label>
+    </div>
+    <div class="hint" style="margin-top:8px">သို့မဟုတ် ဓာတ်ပုံကို ဒီနေရာထဲ ဆွဲထည့်/Paste (Ctrl+V) လုပ်ပါ</div>
+  </div>
+  <div id="preview">
+    <div class="imgbox"><img id="img" alt=""></div>
+    <div id="thumbs" style="display:flex;gap:6px;overflow-x:auto;margin-top:8px"></div>
+    <div class="seg" id="modeSeg" style="margin:10px 0 4px"><button data-m="orig">မူရင်း</button><button data-m="enh" class="on">ဖြောင့်+ကြည်</button><button data-m="bw">အဖြူအမည်း</button></div>
+    <div class="hint">စာရွက်ကို အလိုအလျောက် ရှာ၊ အနားဖြတ်၊ ဖြောင့်အောင်ဆွဲမတ်၊ ကြည်အောင် ပြင်ပေးပါတယ်။ ပုံကို ကြာကြာနှိပ်ရင် ဖုန်းထဲ သိမ်းလို့ရပါတယ်။</div>
+    <div class="row" style="margin-top:10px">
+      <button class="ghost" id="rotL">⟲ လှည့်</button>
+      <button class="ghost" id="rotR">⟳ လှည့်</button>
+      <button class="ghost" id="clear">✕ ဒီစာမျက်နှာ ဖယ်</button>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <span class="step">STEP 2</span>
+  <div style="font-weight:700">စာဖတ်မယ်</div>
+  <label for="mathMode">သင်္ချာ/သိပ္ပံ သင်္ကေတ ရေးပုံ</label>
+  <select id="mathMode"><option value="uni">Unicode သင်္ကေတ (√ π x² ∑) – ကူးလို့လွယ်</option><option value="tex">LaTeX ($\sqrt{x}$, $x^2$)</option></select>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="precise" checked> တိကျစွာဖတ် (စာမျက်နှာကို အပိုင်းခွဲ ချဲ့ဖတ် — ပိုမှန်၊ နည်းနည်းကြာ)</label>
+  <button id="go" disabled style="width:100%;margin-top:8px">✨ စာသားဖတ်မယ်</button>
+  <div class="prog" id="prog"><i id="bar"></i></div>
+  <div id="status"></div>
+</section>
+
+<section class="card">
+  <span class="step">STEP 3</span>
+  <div style="font-weight:700">စာသား (ကိုယ်တိုင် ပြင်နိုင်ပါတယ်)</div>
+  <textarea id="out" placeholder="ဖတ်ထားတဲ့ စာသား ဒီမှာ ပေါ်လာမယ်..."></textarea>
+  <div class="syms" id="syms" aria-label="သင်္ကေတများ"></div>
+  <div class="count" id="count"></div>
+  <div class="row" style="margin-top:8px">
+    <button class="grow" id="copy">📋 ကူးမယ်</button>
+    <button class="ghost grow" id="share">↗ Share</button>
+    <button class="ghost grow" id="dl">⬇ .txt</button>
+  </div>
+</section>
+
+<section class="card">
+  <span class="step">STEP 4</span>
+  <div style="font-weight:700">ပြန်ရိုက်ထားတဲ့ စာမျက်နှာ ပုံ ထုတ်မယ်</div>
+  <p class="hint" style="margin:2px 0 8px"><b>တစ်ပုံစံတည်း</b> – မူရင်းစာရွက်အတိုင်း ဇယား (Table)၊ အတန်းလိုက်၊ ပုံ/ပုံကြမ်းတွေ ပါပြီး စာတွေကို ကြည်လင်အောင် ပြန်ရိုက်ပေးပါတယ်။ ပုံတစ်ပုံကို ၃၀-၉၀ စက္ကန့် ကြာနိုင်ပါတယ်။</p>
+  <label for="pageFmt">စာမျက်နှာ အရွယ်အစား</label>
+  <select id="pageFmt" style="margin-bottom:10px"><option value="a4p" selected>A4 ရပ် (Portrait)</option><option value="a4l">A4 ကျယ် (Landscape)</option><option value="orig">မူရင်း ပုံ အချိုးအတိုင်း</option></select>
+  <label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px;margin:0 0 10px"><input type="checkbox" id="keepSpace" style="width:auto"> မူရင်းစာရွက်ရဲ့ နေရာလွတ်/ကွာဟချက်တွေကို ထားမယ် (မထားရင် မေးခွန်းပုံစံ တဆက်တည်း စီမယ်)</label>
+  <label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px;margin:0 0 10px"><input type="checkbox" id="tblImg" style="width:auto"> ဇယားတွေကို စာပြန်မရိုက်ဘဲ မူရင်းပုံအတိုင်း (ကြည်အောင်ပြင်ပြီး) ထည့်မယ်</label>
+  <button id="mkLayout" style="width:100%;margin-bottom:12px">📄 တစ်ပုံစံတည်း ပြန်ရိုက်မယ် (ဇယား၊ ပုံ ပါ)</button>
+  <div class="hint" style="margin-bottom:2px">သို့မဟုတ် စာသားသက်သက်ကိုပဲ စာမျက်နှာပေါ် စီမယ် (အပေါ်က စာသားကို ပြင်ထားရင် ဒါကို သုံးပါ) –</div>
+  <div class="row">
+    <div class="grow"><label for="imgSize">စာလုံးအရွယ်</label><select id="imgSize"><option value="30">သေး</option><option value="36" selected>ပုံမှန်</option><option value="46">ကြီး</option></select></div>
+    <div class="grow"><label for="imgTheme">နောက်ခံ</label><select id="imgTheme"><option value="w">အဖြူ</option><option value="p">စာရွက်ရောင် (နူးညံ့)</option></select></div>
+  </div>
+  <button id="mkImg" class="ghost" style="width:100%;margin-top:10px">🖼 စာသားသက်သက် ပုံထုတ်မယ်</button>
+  <div id="imgOut" style="display:grid;gap:14px;margin-top:12px"></div>
+</section>
+
+<section class="card">
+  <span class="step">STEP 5</span>
+  <div style="font-weight:700">AI နဲ့ ဆက်လုပ်မယ် <span class="hint">(Gemini key လို)</span></div>
+  <div class="row">
+    <div class="grow"><label for="tLang">ဘာသာစကား</label><select id="tLang"></select></div>
+    <div class="grow"><label for="tStyle">စာရေးပုံစံ</label><select id="tStyle"></select></div>
+  </div>
+  <label for="tAsk">ကိုယ်ပိုင် မေးခွန်း/ညွှန်ကြားချက် (မဖြည့်လည်းရ)</label>
+  <input type="text" id="tAsk" placeholder="ဥပမာ - ဒီစာထဲက ရက်စွဲတွေကို စာရင်းလုပ်ပေး">
+  <button id="tGo" style="width:100%;margin-top:10px">✨ ပြောင်းမယ်</button>
+  <textarea id="tOut" style="min-height:180px;margin-top:10px" placeholder="AI ရလဒ် ဒီမှာ ပေါ်မယ်..."></textarea>
+  <div class="row" style="margin-top:8px"><button class="grow" id="tCopy">📋 ကူးမယ်</button><button class="ghost grow" id="tUse">↑ အပေါ်စာသားနေရာ အစားထိုး</button></div>
+</section>
+
+<section class="card">
+  <details>
+    <summary>အရင်ဖတ်ထားတာများ (<span id="hn">0</span>)</summary>
+    <div id="hist"></div>
+  </details>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+let engine=LS.get('engine','ai'), rot=0, srcImg=null;
+
+/* ---------- settings ---------- */
+function showEngine(){
+  $('engAI').classList.toggle('on',engine==='ai');$('engOff').classList.toggle('on',engine!=='ai');
+  $('aiBox').style.display=engine==='ai'?'':'none';$('offBox').style.display=engine==='ai'?'none':'';
+}
+$('key').value=LS.get('gkey','');$('model').value=LS.get('gmodel','gemini-2.5-flash');showEngine();
+$('btnSettings').onclick=()=>{const s=$('settings');s.style.display=s.style.display==='none'?'':'none'};
+$('engAI').onclick=()=>{engine='ai';showEngine()};
+$('engOff').onclick=()=>{engine='off';showEngine()};
+$('saveSet').onclick=()=>{LS.set('engine',engine);LS.set('gkey',$('key').value.trim());LS.set('gmodel',$('model').value);$('settings').style.display='none';setStatus('ဆက်တင် သိမ်းပြီး','ok')};
+if(engine==='ai'&&!LS.get('gkey','')) $('settings').style.display='';
+
+function setStatus(t,c){const s=$('status');s.textContent=t;s.className=c||''}
+function timed(msg){const t0=Date.now(),u=()=>setStatus(msg(Math.round((Date.now()-t0)/1000)));u();const id=setInterval(u,1000);return()=>{clearInterval(id);return Math.round((Date.now()-t0)/100)/10}}
+function setProg(p){$('prog').style.display=p==null?'none':'block';if(p!=null)$('bar').style.width=(p*100)+'%'}
+
+/* ---------- image input (multi-page) ---------- */
+let pages=[],cur=0;
+function readDataURL(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(f)})}
+function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>rej(new Error('img'));im.src=src})}
+async function decodeFile(f){
+  // 1) data URL (works where blob: URLs are blocked)
+  try{const u=await readDataURL(f);const im=await loadImg(u);if(im.naturalWidth) return {img:im,url:u}}catch(e){}
+  // 2) createImageBitmap fallback (HEIC etc.)
+  try{const bm=await createImageBitmap(f);const c=document.createElement('canvas');c.width=bm.width;c.height=bm.height;
+    c.getContext('2d').drawImage(bm,0,0);const u=c.toDataURL('image/jpeg',.92);return {img:await loadImg(u),url:u}}catch(e){}
+  // 3) HEIC/HEIF -> JPEG conversion in-browser
+  try{
+    if(!window.heic2any) await new Promise((res,rej)=>{const sc=document.createElement('script');
+      sc.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)});
+    setStatus('HEIC ကို JPG ပြောင်းနေပါတယ်...');
+    let out=await heic2any({blob:f,toType:'image/jpeg',quality:.9});if(Array.isArray(out)) out=out[0];
+    const u=await readDataURL(out);return {img:await loadImg(u),url:u};
+  }catch(e){}
+  throw new Error('decode');
+}
+async function addFiles(files){
+  const list=[...files].filter(f=>(f.type||'').startsWith('image/')||/\.(jpe?g|png|webp|heic|heif|gif|bmp)$/i.test(f.name||''));
+  if(!list.length){setStatus('ပုံဖိုင်သာ ရွေးပါ','err');return}
+  setStatus('ပုံ ဖွင့်နေပါတယ်...');
+  for(const f of list){
+    try{const d=await decodeFile(f);pages.push({img:d.img,url:d.url,rot:0,mode:"enh",cache:{}});cur=pages.length-1;renderPages();setStatus('')}
+    catch(e){setStatus('ဒီပုံကို ဖွင့်/ပြောင်းမရပါ — internet ရှိမရှိ စစ်ပါ (သို့) screenshot ရိုက်ပြီး သုံးပါ','err')}
+  }
+}
+function previewURL(pg){const k=pg.rot+'|'+pg.mode;if(!pg.cache[k])pg.cache[k]=toCanvas(pg,1600,false).toDataURL('image/jpeg',.9);return pg.cache[k]}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#modeSeg button');if(!b||!pages.length)return;pages.forEach(q=>q.mode=b.dataset.m);renderPages()});
+function renderPages(){
+  $('preview').style.display=pages.length?'block':'none';$('go').disabled=!pages.length;
+  $('go').textContent=pages.length>1?`✨ စာမျက်နှာ ${pages.length} ခု ဖတ်မယ်`:'✨ စာသားဖတ်မယ်';
+  if(!pages.length) return; if(cur>=pages.length) cur=pages.length-1;
+  const pg=pages[cur];$('img').src=previewURL(pg);$('img').style.transform='';
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===pg.mode));
+  const t=$('thumbs');t.innerHTML='';
+  if(pages.length>1) pages.forEach((q,i)=>{const im=document.createElement('img');im.src=q.url;im.className='thumb'+(i===cur?' on':'');im.onclick=()=>{cur=i;renderPages()};t.appendChild(im)});
+}
+$('fGal').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+$('fCam').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+const dz=$('drop');
+['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over')}));
+dz.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+document.addEventListener('paste',e=>{const fs=[...e.clipboardData.items].filter(i=>i.type.startsWith('image/')).map(i=>i.getAsFile());if(fs.length)addFiles(fs)});
+$('rotL').onclick=()=>{if(pages.length){pages[cur].rot=(pages[cur].rot+270)%360;renderPages()}};
+$('rotR').onclick=()=>{if(pages.length){pages[cur].rot=(pages[cur].rot+90)%360;renderPages()}};
+$('clear').onclick=()=>{pages.splice(cur,1);setStatus('');renderPages()};
+
+function toCanvas(pg,maxSide,gray){
+  const im=pg.img,rot=pg.rot,w0=im.naturalWidth,h0=im.naturalHeight,sw=rot%180?h0:w0,sh=rot%180?w0:h0;
+  const sc=Math.min(1,maxSide/Math.max(sw,sh)),W=Math.round(sw*sc),H=Math.round(sh*sc);
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);x.translate(W/2,H/2);x.rotate(rot*Math.PI/180);
+  const dw=w0*sc,dh=h0*sc;x.drawImage(im,-dw/2,-dh/2,dw,dh);
+  if(gray){x.setTransform(1,0,0,1,0,0);const d=x.getImageData(0,0,W,H),p=d.data;
+    for(let i=0;i<p.length;i+=4){const g=.3*p[i]+.59*p[i+1]+.11*p[i+2];p[i]=p[i+1]=p[i+2]=g}x.putImageData(d,0,0)}
+  if(pg.mode&&pg.mode!=='orig'){const o=scanPage(c);enhanceCanvas(o,pg.mode);return o}
+  return c;
+}
+
+/* ---------- image clean-up: flatten lighting, boost contrast, sharpen ---------- */
+function boxBlur(a,w,h,r){const t=new Float32Array(a.length);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){let s=0,n=0;for(let k=-r;k<=r;k++){const xx=x+k;if(xx>=0&&xx<w){s+=a[y*w+xx];n++}}t[y*w+x]=s/n}
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){let s=0,n=0;for(let k=-r;k<=r;k++){const yy=y+k;if(yy>=0&&yy<h){s+=t[yy*w+x];n++}}a[y*w+x]=s/n}}
+function enhanceCanvas(c,mode){
+  const W=c.width,H=c.height,cx=c.getContext('2d'),d=cx.getImageData(0,0,W,H),p=d.data,N=W*H;
+  const g=new Float32Array(N);
+  for(let i=0,j=0;i<N;i++,j+=4) g[i]=.299*p[j]+.587*p[j+1]+.114*p[j+2];
+  // paper brightness map: block maximum, then smoothed
+  const f=Math.max(4,Math.round(Math.max(W,H)/180)),sw=Math.ceil(W/f),sh=Math.ceil(H/f),S=new Float32Array(sw*sh);
+  for(let y=0;y<H;y++){const row=((y/f)|0)*sw;for(let x=0;x<W;x++){const k=row+((x/f)|0),v=g[y*W+x];if(v>S[k])S[k]=v}}
+  const r=Math.max(2,Math.round(sw/16));boxBlur(S,sw,sh,r);boxBlur(S,sw,sh,r);
+  const V=new Float32Array(N),Fk=new Float32Array(N),hist=new Uint32Array(256);
+  for(let y=0;y<H;y++){let fy=y/f-.5;fy=fy<0?0:fy>sh-1?sh-1:fy;const y0=fy|0,y1=Math.min(sh-1,y0+1),ty=fy-y0;
+    for(let x=0;x<W;x++){let fx=x/f-.5;fx=fx<0?0:fx>sw-1?sw-1:fx;const x0=fx|0,x1=Math.min(sw-1,x0+1),tx=fx-x0;
+      const bg=(S[y0*sw+x0]*(1-tx)+S[y0*sw+x1]*tx)*(1-ty)+(S[y1*sw+x0]*(1-tx)+S[y1*sw+x1]*tx)*ty;
+      const fk=1/Math.max(40,bg*.96);Fk[y*W+x]=fk;let v=g[y*W+x]*fk;v=v>1?1:v;V[y*W+x]=v;hist[(v*255)|0]++}}
+  let acc=0,lo=0;for(let i=0;i<256;i++){acc+=hist[i];if(acc>=N*.01){lo=i/255;break}}
+  lo=Math.min(lo,.6);
+  const lev=x=>{x=x>1?1:x;x=(x-lo)/(1-lo);return x<0?0:Math.pow(x,1.5)};
+  for(let i=0;i<N;i++)V[i]=lev(V[i]);
+  // unsharp mask (3x3)
+  const O=new Float32Array(N);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const xa=x>0?x-1:x,xb=x<W-1?x+1:x,ya=y>0?y-1:y,yb=y<H-1?y+1:y;
+    const bl=(V[ya*W+xa]+V[ya*W+x]+V[ya*W+xb]+V[y*W+xa]+V[y*W+x]+V[y*W+xb]+V[yb*W+xa]+V[yb*W+x]+V[yb*W+xb])/9;
+    let v=V[y*W+x]+1.1*(V[y*W+x]-bl);
+    if(mode==='bw'){const t=(v-.35)/.45;v=t<0?0:t>1?1:t*t*(3-2*t)}
+    O[y*W+x]=v<0?0:v>1?1:v}
+  if(mode==='bw'){for(let i=0,j=0;i<N;i++,j+=4){const o=O[i]*255;p[j]=p[j+1]=p[j+2]=o}}
+  else{for(let i=0,j=0;i<N;i++,j+=4){const fk=Fk[i],dl=O[i]-V[i];
+    for(let c=0;c<3;c++){let v=lev(p[j+c]*fk)+dl;p[j+c]=(v<0?0:v>1?1:v)*255}}}
+  cx.putImageData(d,0,0);
+}
+
+
+/* ---------- document scan: find the page, crop, flatten perspective, straighten text lines ---------- */
+function otsu(g,n){const h=new Uint32Array(256);for(let i=0;i<n;i++)h[g[i]]++;
+  let sum=0;for(let i=0;i<256;i++)sum+=i*h[i];let wB=0,sB=0,best=0,t=127;
+  for(let i=0;i<256;i++){wB+=h[i];if(!wB)continue;const wF=n-wB;if(!wF)break;sB+=i*h[i];
+    const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)*(mB-mF);if(v>best){best=v;t=i}}return t}
+function solve8(A,b){const n=8;for(let i=0;i<n;i++){let m=i;for(let r=i+1;r<n;r++)if(Math.abs(A[r][i])>Math.abs(A[m][i]))m=r;
+    [A[i],A[m]]=[A[m],A[i]];[b[i],b[m]]=[b[m],b[i]];if(Math.abs(A[i][i])<1e-12)return null;
+    for(let r=i+1;r<n;r++){const f=A[r][i]/A[i][i];for(let c=i;c<n;c++)A[r][c]-=f*A[i][c];b[r]-=f*b[i]}}
+  const x=new Array(n);for(let i=n-1;i>=0;i--){let t=b[i];for(let c=i+1;c<n;c++)t-=A[i][c]*x[c];x[i]=t/A[i][i]}return x}
+function findPageQuad(src){
+  const W=src.width,H=src.height,k=Math.min(1,480/Math.max(W,H)),w=Math.max(8,Math.round(W*k)),h=Math.max(8,Math.round(H*k));
+  const sm=document.createElement('canvas');sm.width=w;sm.height=h;const sx=sm.getContext('2d');sx.drawImage(src,0,0,w,h);
+  const d=sx.getImageData(0,0,w,h).data,n=w*h,g=new Uint8Array(n);
+  for(let i=0,j=0;i<n;i++,j+=4)g[i]=.299*d[j]+.587*d[j+1]+.114*d[j+2];
+  const t=otsu(g,n)*.85,lab=new Int32Array(n),stack=new Int32Array(n);let best=0,bestId=0,id=0;
+  for(let s0=0;s0<n;s0++){if(g[s0]<=t||lab[s0])continue;id++;let sp=0,cnt=0;stack[sp++]=s0;lab[s0]=id;
+    while(sp){const q=stack[--sp];cnt++;const x=q%w,y=(q/w)|0;
+      if(x>0&&g[q-1]>t&&!lab[q-1]){lab[q-1]=id;stack[sp++]=q-1}
+      if(x<w-1&&g[q+1]>t&&!lab[q+1]){lab[q+1]=id;stack[sp++]=q+1}
+      if(y>0&&g[q-w]>t&&!lab[q-w]){lab[q-w]=id;stack[sp++]=q-w}
+      if(y<h-1&&g[q+w]>t&&!lab[q+w]){lab[q+w]=id;stack[sp++]=q+w}}
+    if(cnt>best){best=cnt;bestId=id}}
+  if(best<n*.18) return null;
+  let tl=[0,1e9],br=[0,-1e9],tr=[0,-1e9],bl=[0,1e9],TL,TR,BR,BL;
+  for(let q=0;q<n;q++){if(lab[q]!==bestId)continue;const x=q%w,y=(q/w)|0,a=x+y,b=x-y;
+    if(a<tl[1]){tl[1]=a;TL=[x,y]}if(a>br[1]){br[1]=a;BR=[x,y]}if(b>tr[1]){tr[1]=b;TR=[x,y]}if(b<bl[1]){bl[1]=b;BL=[x,y]}}
+  const Q=[TL,TR,BR,BL].map(p=>[(p[0]+.5)/k,(p[1]+.5)/k]);
+  const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+  const area=Math.abs(Q[0][0]*Q[1][1]-Q[1][0]*Q[0][1]+Q[1][0]*Q[2][1]-Q[2][0]*Q[1][1]+Q[2][0]*Q[3][1]-Q[3][0]*Q[2][1]+Q[3][0]*Q[0][1]-Q[0][0]*Q[3][1])/2;
+  const mn=Math.min(dist(Q[0],Q[1]),dist(Q[1],Q[2]),dist(Q[2],Q[3]),dist(Q[3],Q[0]));
+  if(area<W*H*.2||mn<Math.min(W,H)*.25) return null;
+  // pull corners slightly inward to drop the dark rim
+  const cx=Q.reduce((a,p)=>a+p[0],0)/4,cy=Q.reduce((a,p)=>a+p[1],0)/4,pull=.006;
+  return Q.map(p=>[p[0]+(cx-p[0])*pull*2,p[1]+(cy-p[1])*pull*2]);
+}
+function warpQuad(src,Q,maxSide){
+  const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+  let Wd=Math.max(dist(Q[0],Q[1]),dist(Q[3],Q[2])),Hd=Math.max(dist(Q[0],Q[3]),dist(Q[1],Q[2]));
+  const sc=Math.min(1,maxSide/Math.max(Wd,Hd));Wd=Math.max(16,Math.round(Wd*sc));Hd=Math.max(16,Math.round(Hd*sc));
+  const dst=[[0,0],[Wd,0],[Wd,Hd],[0,Hd]],A=[],b=[];
+  for(let i=0;i<4;i++){const [u,v]=dst[i],[x,y]=Q[i];
+    A.push([u,v,1,0,0,0,-u*x,-v*x]);b.push(x);A.push([0,0,0,u,v,1,-u*y,-v*y]);b.push(y)}
+  const m=solve8(A,b);if(!m) return null;
+  const sw=src.width,sh=src.height,sd=src.getContext('2d').getImageData(0,0,sw,sh).data;
+  const out=document.createElement('canvas');out.width=Wd;out.height=Hd;const ox=out.getContext('2d'),od=ox.createImageData(Wd,Hd),o=od.data;
+  for(let v=0;v<Hd;v++)for(let u=0;u<Wd;u++){
+    const z=m[6]*u+m[7]*v+1,x=(m[0]*u+m[1]*v+m[2])/z,y=(m[3]*u+m[4]*v+m[5])/z,j=(v*Wd+u)*4;
+    if(x<0||y<0||x>=sw-1||y>=sh-1){o[j]=o[j+1]=o[j+2]=255;o[j+3]=255;continue}
+    const x0=x|0,y0=y|0,fx=x-x0,fy=y-y0,i00=(y0*sw+x0)*4,i10=i00+4,i01=i00+sw*4,i11=i01+4;
+    for(let c=0;c<3;c++)o[j+c]=(sd[i00+c]*(1-fx)+sd[i10+c]*fx)*(1-fy)+(sd[i01+c]*(1-fx)+sd[i11+c]*fx)*fy;
+    o[j+3]=255}
+  ox.putImageData(od,0,0);return out;
+}
+function deskew(c){
+  const W=c.width,H=c.height,k=Math.min(1,700/Math.max(W,H)),w=Math.round(W*k),h=Math.round(H*k);
+  const sm=document.createElement('canvas');sm.width=w;sm.height=h;const sx=sm.getContext('2d');sx.drawImage(c,0,0,w,h);
+  const d=sx.getImageData(0,0,w,h).data,n=w*h,g=new Uint8Array(n);
+  for(let i=0,j=0;i<n;i++,j+=4)g[i]=.299*d[j]+.587*d[j+1]+.114*d[j+2];
+  const t=otsu(g,n)*.9,xs=[],ys=[],mx=w*.03,my=h*.03;
+  for(let y=my|0;y<h-my;y++)for(let x=mx|0;x<w-mx;x++)if(g[y*w+x]<t){xs.push(x);ys.push(y)}
+  if(xs.length<200) return c;
+  const step=Math.max(1,Math.floor(xs.length/60000)),bins=new Float32Array(w+h+4),off=w+2;
+  let bestA=0,bestV=-1,v0=0;
+  for(let a=-6;a<=6.001;a+=.25){const r=a*Math.PI/180,cs=Math.cos(r),sn=Math.sin(r);bins.fill(0);
+    for(let i=0;i<xs.length;i+=step)bins[Math.round(ys[i]*cs-xs[i]*sn)+off]++;
+    let v=0;for(let i=0;i<bins.length;i++)v+=bins[i]*bins[i];
+    if(Math.abs(a)<.01)v0=v;if(v>bestV){bestV=v;bestA=a}}
+  if(!bestA||bestV<v0*1.02) return c;
+  const out=document.createElement('canvas');out.width=W;out.height=H;const ox=out.getContext('2d');
+  ox.fillStyle='#fff';ox.fillRect(0,0,W,H);ox.translate(W/2,H/2);ox.rotate(-bestA*Math.PI/180);ox.drawImage(c,-W/2,-H/2);
+  return out;
+}
+function scanPage(src){
+  try{const Q=findPageQuad(src);if(!Q) return src;
+    const w=warpQuad(src,Q,Math.max(src.width,src.height));if(!w) return src;
+    return deskew(w);
+  }catch(e){return src}
+}
+
+/* ---------- OCR: Gemini ---------- */
+const PROMPT_BASE=`ဒီပုံထဲက စာအားလုံးကို အတိအကျ ဖတ်ပြီး Unicode မြန်မာစာ (Myanmar Unicode) နဲ့ ပြန်ရေးပေးပါ။
+ပုံက မကြည်လင်ရင်တောင် အတတ်နိုင်ဆုံး ဖတ်ပါ။
+စည်းကမ်းများ:
+- ပုံထဲမှာ ရေးထားတဲ့ စာလုံးပေါင်း၊ ပုဒ်ဖြတ်၊ စာပိုဒ်ခွဲပုံ၊ ကိန်းဂဏန်းတွေကို မူရင်းအတိုင်း ထိန်းပါ။
+- မဖတ်ရတဲ့ စာလုံးကို [?] လို့ ထားပါ။ ကိုယ့်ဘာသာ ထပ်မဖြည့်၊ မပြင်၊ မဘာသာမပြန်ပါနဲ့။
+- အင်္ဂလိပ်စာ/ဂဏန်းပါရင် မူရင်းအတိုင်း ထားပါ။
+- သင်္ချာ၊ ရူပ၊ ဓာတုဗေဒ ပုံသေနည်း၊ သင်္ကေတ၊ ညီမျှခြင်းတွေပါရင် မကျန်ရအောင် အကုန်ရေးပါ (ပုံဖြစ်နေလို့ ကျော်မထားပါနဲ့)။`;
+const MATH_UNI=`
+- သင်္ချာသင်္ကေတတွေကို Unicode စာလုံးနဲ့ ရေးပါ: √ ∛ π ∑ ∏ ∫ ∞ ± × ÷ ≠ ≈ ≡ ≤ ≥ ° ′ ″ Δ θ α β γ λ μ σ ω Ω ∈ ∠ ⊥ ∥ ∴ ∵ → ⇌ ။ ထပ်ညွှန်းကိန်းကို x² x³ xⁿ၊ အောက်ညွှန်းကို H₂O a₁ လို Unicode superscript/subscript နဲ့၊ ခွဲကိန်းကို a/b (အပေါ်အောက်ရှုပ်ရင် (a+b)/(c+d)) လို ရေးပါ။ LaTeX/markdown မသုံးပါနဲ့။`;
+const MATH_TEX=`
+- သင်္ချာ ပုံသေနည်း၊ ညီမျှခြင်း၊ သင်္ကေတတွေကို LaTeX နဲ့ ရေးပြီး $...$ ထဲ ထည့်ပါ (ဥပမာ $x^2+\\sqrt{3}$, $\\frac{a}{b}$, $\\int_0^1 x\\,dx$, $\\alpha$, $H_2O$)။ ပုံမှန်စာတွေကိုတော့ LaTeX မလုပ်ပါနဲ့။`;
+const MATH_END=`
+- ရလဒ်မှာ ရေးထားတဲ့ စာသားသက်သက်သာ ပေးပါ။ ရှင်းလင်းချက်၊ markdown၊ code block မထည့်ပါနဲ့။`;
+function buildPrompt(){return PROMPT_BASE+(($('mathMode')&&$('mathMode').value==='tex')?MATH_TEX:MATH_UNI)+MATH_END}
+async function gemini(parts,cfg){
+  const key=LS.get('gkey','');if(!key) throw new Error('Settings မှာ Gemini API Key အရင်ထည့်ပါ');
+  const model=LS.get('gmodel','gemini-2.5-flash');
+  let r;
+  try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
+    method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
+    body:JSON.stringify({contents:[{parts}],generationConfig:Object.assign({temperature:0},cfg||{})})});
+  }catch(e){throw new Error('Google (Gemini) ကို ချိတ်ဆက်မရပါ။ ဒီဖိုင်ကို preview/ဖိုင်ကြည့်တဲ့နေရာမှာ ဖွင့်ထားရင် network ပိတ်ထားတတ်ပါတယ်။ Netlify လို website အဖြစ်တင်ပြီး Safari/Chrome မှာ ဖွင့်ပါ။ (internet စစ်ပါ၊ VPN ရှိရင် ပိတ်ပါ)')}
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){const m=(j.error&&j.error.message)||('HTTP '+r.status);
+    throw new Error(r.status===400&&/API key/i.test(m)?'API Key မမှန်ပါ':r.status===429?'ခဏစောင့်ပြီး ပြန်စမ်းပါ (quota ပြည့်နေ)':m)}
+  const cand=j.candidates&&j.candidates[0];
+  const t=cand&&cand.content&&cand.content.parts?cand.content.parts.map(p=>p.text||'').join(''):'';
+  return t.replace(/^```\w*\n?|```$/g,'').trim();
+}
+async function ocrGemini(pg){
+  const b64=toCanvas(pg,2200,false).toDataURL('image/jpeg',.9).split(',')[1];
+  const t=await gemini([{text:buildPrompt()},{inline_data:{mime_type:'image/jpeg',data:b64}}]);
+  if(!t) throw new Error('စာ ရှာမတွေ့ပါ — ပုံပိုကြည်အောင် ပြန်ရိုက်ကြည့်ပါ');
+  return t;
+}
+
+/* split a page into whitespace-aligned strips and read each at high resolution */
+function pageStrips(pg){
+  const c=toCanvas(pg,3000,false),W=c.width,H=c.height,x=c.getContext('2d');
+  const target=Math.round(W*0.5);
+  if(H<=target*1.35) return [c];
+  const d=x.getImageData(0,0,W,H).data,ink=new Float32Array(H);
+  for(let y=0;y<H;y++){let n=0;for(let i=0;i<W;i+=3){const o=(y*W+i)*4;if(.3*d[o]+.59*d[o+1]+.11*d[o+2]<110)n++}ink[y]=n}
+  const sm=new Float32Array(H);for(let y=0;y<H;y++){let s=0,n=0;for(let k=-3;k<=3;k++){const yy=y+k;if(yy>=0&&yy<H){s+=ink[yy];n++}}sm[y]=s/n}
+  const N=Math.round(H/target),cuts=[0];
+  for(let k=1;k<N;k++){const ideal=Math.round(H*k/N),lo=Math.max(cuts[cuts.length-1]+target*.5,ideal-target*.25),hi=Math.min(H-target*.3,ideal+target*.25);
+    let best=ideal,bv=1e9;for(let y=Math.round(lo);y<=hi;y++){if(sm[y]<bv){bv=sm[y];best=y}}cuts.push(best)}
+  cuts.push(H);const out=[];
+  for(let k=0;k<cuts.length-1;k++){const y0=Math.max(0,cuts[k]-6),y1=Math.min(H,cuts[k+1]+6),o=document.createElement('canvas');
+    o.width=W;o.height=y1-y0;o.getContext('2d').drawImage(c,0,y0,W,y1-y0,0,0,W,y1-y0);out.push(o)}
+  return out;
+}
+const PART_NOTE='\n\nမှတ်ချက်: ဒီပုံက စာမျက်နှာတစ်ခုလုံးရဲ့ အပိုင်းတစ်ခုပဲ ဖြစ်ပါတယ်။ အပေါ်/အောက်စွန်းမှာ ဖြတ်ထားလို့ လိုင်းတစ်ဝက်ပဲ မြင်ရရင် မြင်ရသလောက်ပဲ ရေးပါ။ ပုံထဲမှာ မရှိတာ မဖြည့်ပါနဲ့။ စာအကုန် အတိအကျ ဖတ်ပါ (စာလုံးတစ်လုံးမှ မကျန်စေနဲ့)။';
+async function readPage(pg,onPartial){
+  const precise=$('precise')&&$('precise').checked,strips=precise?pageStrips(pg):null;
+  if(!strips||strips.length<2) return await ocrOne(pg,onPartial);
+  const res=[];
+  for(let k=0;k<strips.length;k++){
+    setStatus(`အပိုင်း ${k+1}/${strips.length} ဖတ်နေ...`);
+    const t=await ocrCanvas(strips[k],PART_NOTE,u=>onPartial&&onPartial([...res,u].join('\n')));
+    if(t) res.push(t);
+  }
+  return res.join('\n').trim();
+}
+async function ocrCanvas(cv,note,onText){
+  const b64=cv.toDataURL('image/jpeg',.92).split(',')[1];
+  return await gemini([{text:buildPrompt()+(note||'')},{inline_data:{mime_type:'image/jpeg',data:b64}}]);
+}
+async function ocrOne(pg){return await ocrGemini(pg)}
+/* ---------- OCR: Tesseract offline ---------- */
+let tessLoad=null;
+function loadTess(){
+  if(window.Tesseract) return Promise.resolve();
+  return tessLoad||(tessLoad=new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';s.onload=res;s.onerror=()=>rej(new Error('Tesseract ဒေါင်းမရပါ — internet စစ်ပါ'));document.head.appendChild(s)}));
+}
+async function ocrTess(pg){
+  setStatus('Offline engine ပြင်ဆင်နေ...');setProg(.05);await loadTess();
+  const c=toCanvas(pg,2400,true);
+  const w=await Tesseract.createWorker('mya',1,{logger:m=>{
+    if(m.status==='recognizing text'){setProg(.2+m.progress*.8);setStatus('ဖတ်နေပါတယ် '+Math.round(m.progress*100)+'%')}
+    else if(m.progress!=null){setProg(m.progress*.2);setStatus('Language data ဒေါင်းနေ... ')}}});
+  try{const {data}=await w.recognize(c);
+    // Tesseract inserts spaces between Burmese syllables; tidy them
+    let t=data.text.replace(/([က-႟])[ \t]+(?=[က-႟])/g,'$1').trim();
+    if(!t) throw new Error('စာ ရှာမတွေ့ပါ');return t;
+  } finally{await w.terminate()}
+}
+
+/* ---------- run ---------- */
+$('go').onclick=async()=>{
+  if(!pages.length) return;
+  $('go').disabled=true;setProg(.02);let stop=null;
+  try{
+    const outs=[];let pgNo=1;stop=timed(sec=>`စာမျက်နှာ ${pgNo}/${pages.length} ဖတ်နေပါတယ်... ${sec} s`);
+    for(let i=0;i<pages.length;i++){
+      pgNo=i+1;setProg((i+.3)/pages.length);
+      const t=engine==='ai'?await readPage(pages[i]):await ocrTess(pages[i]);
+      outs.push(pages.length>1?`--- စာမျက်နှာ ${i+1} ---\n${t}`:t);
+      $('out').value=outs.join('\n\n');upd();
+    }
+    setProg(1);const secs=stop();stop=null;setStatus(`ဖတ်ပြီးပါပြီ ✓ (${secs} s) ပြင်စရာရှိရင် အောက်မှာ ပြင်ပါ`,'ok');
+    addHist($('out').value);$('out').scrollIntoView({behavior:'smooth',block:'center'});
+  }catch(e){if(stop){stop();stop=null}setStatus('⚠ '+e.message+($('out').value?' (ဖတ်ပြီးသလောက် ထားပေးထားပါတယ်)':''),'err');setProg(null)}
+  finally{$('go').disabled=false;setTimeout(()=>setProg(null),800)}
+};
+
+/* ---------- AI tools: translate / restyle / ask ---------- */
+const LANGS=['မြန်မာ','English','中文 (Chinese)','ไทย (Thai)','日本語 (Japanese)','한국어 (Korean)','हिन्दी (Hindi)','Bahasa Indonesia','Tiếng Việt','Français','Español','Deutsch','العربية'];
+const STYLES={
+ 'ပုံမှန် (မပြောင်း)':'',
+ 'နေ့စဉ်မှတ်တမ်း (Diary)':'နေ့စဉ်မှတ်တမ်း (diary) ပုံစံနဲ့ ပြန်စီပေးပါ။',
+ 'အကျဉ်းချုပ်':'အဓိကအချက်တွေကို အကျဉ်းချုပ်ပေးပါ။',
+ 'Bullet / Checklist':'အချက်အလက်တွေကို bullet list သို့ checklist အဖြစ် စီပေးပါ။',
+ 'Q&A မေးခွန်းအဖြေ':'ဒီစာထဲက အဓိကအချက်တွေကို မေးခွန်းနဲ့ အဖြေ (Q&A) ပုံစံ ပြုလုပ်ပေးပါ။',
+ 'Facebook Post':'Facebook post တစ်ခုအဖြစ် ဆွဲဆောင်မှုရှိရှိ ရေးပေးပါ။',
+ 'Email':'ယဉ်ကျေးတဲ့ email အဖြစ် (subject ပါ) ရေးပေးပါ။',
+ 'တရားဝင်စာ (Formal)':'တရားဝင် စာပေလေသံနဲ့ ပြန်ရေးပေးပါ။',
+ 'လွယ်လွယ်ရှင်းရှင်း ရှင်းပြ':'ကျောင်းသားတစ်ယောက် နားလည်လွယ်အောင် ရိုးရိုးရှင်းရှင်း ရှင်းပြပေးပါ။',
+ 'စာလုံးပေါင်း/သဒ္ဒါ ပြင်ပေး':'စာလုံးပေါင်းနဲ့ သဒ္ဒါအမှားတွေကိုသာ ပြင်ပေးပါ၊ အဓိပ္ပါယ်မပြောင်းပါနဲ့။'};
+LANGS.forEach(l=>$('tLang').add(new Option(l,l)));Object.keys(STYLES).forEach(k=>$('tStyle').add(new Option(k,k)));
+$('tLang').value='မြန်မာ';
+$('tGo').onclick=async()=>{
+  const src=$('out').value.trim();if(!src){setStatus('စာသား အရင်ဖတ်ပါ','err');return}
+  const lang=$('tLang').value,style=STYLES[$('tStyle').value],extra=$('tAsk').value.trim();
+  let p=`အောက်ပါ စာသားကို ${lang} ဘာသာဖြင့် ပေးပါ။ ${style} ${extra?('ထပ်ဆောင်းညွှန်ကြားချက်: '+extra):''}\n`+
+        `မူရင်းစာသားကို မဖြုတ်ပါနဲ့၊ အချက်အလက် မထပ်ထည့်ပါနဲ့။ ရလဒ်ကိုသာ ပေးပါ၊ markdown ** မသုံးပါနဲ့။\n\n=== စာသား ===\n${src}`;
+  $('tGo').disabled=true;$('tOut').value='';const stopT=timed(sec=>`AI အလုပ်လုပ်နေပါတယ်... ${sec} s`);
+  try{const t=await gemini([{text:p}]);$('tOut').value=t;setStatus(`ပြီးပါပြီ ✓ (${stopT()} s)`,'ok');$('tOut').scrollIntoView({behavior:'smooth',block:'center'})}
+  catch(e){stopT();setStatus('⚠ '+e.message,'err')}finally{$('tGo').disabled=false}
+};
+$('tCopy').onclick=async()=>{const t=$('tOut').value;if(!t) return;try{await navigator.clipboard.writeText(t)}catch(e){$('tOut').select();document.execCommand('copy')}setStatus('ကူးပြီးပါပြီ ✓','ok')};
+$('tUse').onclick=()=>{if($('tOut').value){$('out').value=$('tOut').value;upd();setStatus('အပေါ်က စာသားအဖြစ် အစားထိုးပြီး','ok')}};
+
+/* ---------- output actions ---------- */
+function upd(){const n=[...$('out').value].length;$('count').textContent=n?n+' လုံး':''}
+$('out').addEventListener('input',upd);
+$('copy').onclick=async()=>{const t=$('out').value;if(!t) return;
+  try{await navigator.clipboard.writeText(t)}catch(e){$('out').select();document.execCommand('copy')}
+  setStatus('ကူးပြီးပါပြီ ✓','ok')};
+$('share').onclick=async()=>{const t=$('out').value;if(!t) return;
+  if(navigator.share){try{await navigator.share({text:t})}catch(e){}}else $('copy').click()};
+$('dl').onclick=()=>{const t=$('out').value;if(!t) return;saveFile(new Blob([t],{type:'text/plain;charset=utf-8'}),'myanmar-ocr-'+Date.now()+'.txt')};
+
+/* ---------- history (text only) ---------- */
+function getH(){try{return JSON.parse(LS.get('hist','[]'))}catch(e){return[]}}
+function addHist(t){const h=getH();h.unshift({t,d:Date.now()});LS.set('hist',JSON.stringify(h.slice(0,30)));renderH()}
+function renderH(){const h=getH();$('hn').textContent=h.length;const box=$('hist');box.innerHTML='';
+  h.forEach((x,i)=>{const r=document.createElement('div');r.className='hist';
+    const s=document.createElement('span');s.textContent=x.t.replace(/\s+/g,' ').slice(0,60);
+    const sm=document.createElement('small');sm.textContent=new Date(x.d).toLocaleString();s.appendChild(sm);
+    const o=document.createElement('button');o.className='ghost';o.textContent='ဖွင့်';o.onclick=()=>{$('out').value=x.t;upd();$('out').scrollIntoView({behavior:'smooth'})};
+    const d=document.createElement('button');d.className='ghost';d.textContent='✕';d.onclick=()=>{const a=getH();a.splice(i,1);LS.set('hist',JSON.stringify(a));renderH()};
+    r.append(s,o,d);box.appendChild(r)})}
+renderH();
+
+/* ---------- save helper (artifact downloads capability, else normal download) ---------- */
+async function saveFile(blob,name){
+  try{const dl=window.claude&&await window.claude.use('downloads');
+    if(dl){await dl.save({filename:name,data:blob});return}}catch(e){if(e&&e.code==='declined')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+}
+
+/* ---------- retyped page image ---------- */
+const FONT='"Noto Sans Myanmar","Padauk","Myanmar Text","Myanmar Sangam MN",system-ui,sans-serif';
+const CL=/\P{M}(?:္\P{M}|\p{M})*/gu;
+function tokens(par){
+  try{if(Intl&&Intl.Segmenter)return [...new Intl.Segmenter('my',{granularity:'word'}).segment(par)].map(x=>x.segment)}catch(e){}
+  return par.match(CL)||[]}
+function wrapPar(ctx,par,maxW){
+  const lines=[];let cur='';
+  const push=t=>{cur=t};
+  for(const tk of tokens(par)){
+    if(ctx.measureText(cur+tk).width<=maxW){cur+=tk;continue}
+    if(cur.trim()){lines.push(cur.replace(/\s+$/,''));cur=''}
+    const t=tk.replace(/^\s+/,'');
+    if(ctx.measureText(t).width<=maxW){cur=t;continue}
+    for(const cl of (t.match(CL)||[])){ if(ctx.measureText(cur+cl).width>maxW&&cur){lines.push(cur);cur=''} cur+=cl }
+  }
+  if(cur.trim()||!lines.length)lines.push(cur.replace(/\s+$/,''));
+  return lines}
+async function renderPagesImg(text,size,theme){
+  const land=$('pageFmt')&&$('pageFmt').value==='a4l',PW=land?1754:1240,PH=land?1240:1754,M=110,fs=size,lh=Math.round(size*1.95),maxW=PW-2*M;
+  try{await document.fonts.load(`${fs}px "Noto Sans Myanmar"`,text.slice(0,200));await document.fonts.ready}catch(e){}
+  const mk=()=>{const c=document.createElement('canvas');c.width=PW;c.height=PH;const x=c.getContext('2d');
+    x.fillStyle=theme==='p'?'#fbf8f1':'#ffffff';x.fillRect(0,0,PW,PH);x.fillStyle='#111';x.textBaseline='alphabetic';x.font=`${fs}px ${FONT}`;return c};
+  const out=[];let c=mk(),x=c.getContext('2d'),y=M+fs;
+  for(const par of text.replace(/\r/g,'').split('\n')){
+    if(!par.trim()){y+=Math.round(lh*.55);continue}
+    for(const ln of wrapPar(x,par,maxW)){
+      if(y>PH-M){out.push(c);c=mk();x=c.getContext('2d');y=M+fs}
+      x.fillText(ln,M,y);y+=lh}
+    y+=Math.round(lh*.2)}
+  out.push(c);
+  if(out.length>1)out.forEach((cv,i)=>{const q=cv.getContext('2d');q.font=`24px ${FONT}`;q.fillStyle='#777';q.textAlign='center';q.fillText(`${i+1} / ${out.length}`,PW/2,PH-50)});
+  return out}
+/* ---------- same-layout rebuild: tables, rows, figures ---------- */
+const LAYOUT_PROMPT=`This image is one scanned page of a document. Rebuild it as JSON so it can be retyped in the SAME layout: same reading order, same tables with the same rows and columns, same positions and widths. Reply with ONLY the JSON, no explanation.
+All coordinates are fractions 0..1 of the image (x from the left edge, y from the top edge).
+Schema:
+{"blocks":[
+ {"type":"text","x":0.10,"y":0.05,"w":0.80,"lh":0.013,"align":"left","bold":false,"text":"..."},
+ {"type":"table","x":0.10,"y":0.20,"w":0.80,"box":[0.10,0.20,0.90,0.40],"lh":0.012,"cols":[0.2,0.8],"rows":[[{"text":"label","rs":2},{"text":"1. item one\n2. item two"}],[{"text":"another cell"}]]},
+ {"type":"figure","box":[0.20,0.50,0.70,0.70]}
+]}
+Rules:
+- List blocks top to bottom. x,y = top-left of the block, w = its width, lh = line pitch of that text as a fraction of the image height (for example 0.0125). align is left, center or right.
+- Transcribe every piece of visible text exactly: Myanmar in Unicode, English, numbers, headings, headers, footers, page numbers. Write maths and chemistry with Unicode symbols (x² √ π ≤ ≥ ≠ ± × ÷ Δ θ H₂O). If a word is unreadable write [?]. Never translate, correct or add text.
+- Do not insert line breaks inside a paragraph (the renderer wraps it). Put each numbered item or separate line of a list in its own line using \n inside the same text/cell, or as its own block.
+- Tables: cols are relative column widths summing to 1. rows is a list of rows; each row lists its cells from left to right. A cell is {"text":"..."} and may add "rs" (rows spanned), "cs" (columns spanned), "bold", "align". In rows below a cell with rs>1, leave out the covered column.
+- For every table also give "box":[x0,y0,x1,y1] (its outline as fractions of the image). A bar/overline above a letter (for example NOT A, or the complement of A+B) is written with the combining overline U+0305 after each covered character (A̅, A̅+̅B̅), never as the words "overline". Keep a table's cell text short and exactly as printed, one cell per printed cell; do not split one printed cell into several.
+- Bold is ONLY for headings, titles and sub-headings that are really printed in bold (for example **Truth table**, **Second theorem**) and short column/row header labels of a table. Wrap just that heading text in ** **. Never bold body sentences, questions, answers, list items or whole paragraphs, and never set "bold":true on a block or cell that contains running text. Use \n between separate printed lines.
+- A table cell holds either "text", or "parts": an ordered list of {"text":"..."}, {"table":{...}} and {"fig":[x0,y0,x1,y1]} in the order they are printed in the cell. Use "parts" whenever a cell contains a smaller table (a truth table, a data table) or a picture between paragraphs. A nested table has the same shape as a top-level table ("cols","rows","box","lh") without x/y; every printed cell of it is its own cell, in its real rows and columns, with real column widths.
+- Colours: if a table cell has a coloured or shaded background give "bg":"#rrggbb" (the colour as printed, light shades stay light); if text is printed in a colour other than black give "color":"#rrggbb" on that text block, cell or part. Do not add colours that are not there.
+- Rebuild only the PRINTED (typed) content. Leave out anything written by hand: notes, scribbles, ticks, circles, underlines or arrows drawn with a pen, signatures, stamps, and marks in the margins or rotated along the page edge. Never include them as text or as a figure.
+- Anything that is a picture, circuit, diagram, graph, photo, drawing, or a small table nested inside a table cell is NOT transcribed. Give it as {"fig":[x0,y0,x1,y1]} (box in whole-image fractions, tight around it) inside the cell, or as a top-level {"type":"figure","box":[...]} when it is outside a table. A cell may hold both "text" and "fig".`;
+/*LAYOUTAI*/
+async function layoutAI(canvas){
+  const b64=canvas.toDataURL('image/jpeg',.9).split(',')[1];
+  const t=await gemini([{text:LAYOUT_PROMPT},{inline_data:{mime_type:'image/jpeg',data:b64}}],{responseMimeType:'application/json',maxOutputTokens:30000});
+  try{return JSON.parse(t)}catch(e){const m=t.match(/\{[\s\S]*\}/);if(m)return JSON.parse(m[0]);throw new Error('Layout ဖတ်မရပါ — ပြန်စမ်းပါ')}
+}
+/*END*/
+const hasMy=t=>/[က-႟]/.test(t);
+function fsFor(text,lhpx){return Math.max(13,Math.min(90,Math.round(lhpx/(hasMy(text)?1.85:1.4))))}
+function wrapText(ctx,text,w){const out=[];for(const par of String(text).replace(/\r/g,'').split('\n'))out.push(...wrapPar(ctx,par,w));return out}
+function wrapRuns(ctx,par,w,fs,boldAll){
+  const toks=[];par.split('**').forEach((sg,i)=>{const bd=(boldAll||i%2===1)&&sg.trim().length<=70;if(sg)for(const tk of tokens(sg))toks.push({t:tk,b:bd})});
+  const fnt=b=>`${b?'700 ':''}${fs}px ${FONT}`,mw=tk=>{ctx.font=fnt(tk.b);return ctx.measureText(tk.t).width};
+  const lines=[];let cur=[],cw=0;
+  const flush=()=>{while(cur.length&&!cur[cur.length-1].t.trim())cur.pop();
+    if(cur.length)cur[cur.length-1]={t:cur[cur.length-1].t.replace(/\s+$/,''),b:cur[cur.length-1].b};
+    const m=[];for(const r of cur){if(m.length&&m[m.length-1].b===r.b)m[m.length-1].t+=r.t;else m.push({t:r.t,b:r.b})}
+    lines.push(m);cur=[];cw=0};
+  for(let tk of toks){let tw=mw(tk);
+    if(cw+tw<=w){cur.push(tk);cw+=tw;continue}
+    if(cur.some(r=>r.t.trim()))flush();
+    tk={t:tk.t.replace(/^\s+/,''),b:tk.b};tw=mw(tk);
+    if(tw<=w){cur.push(tk);cw=tw;continue}
+    for(const cl of (tk.t.match(CL)||[])){const c1=mw({t:cl,b:tk.b});if(cw+c1>w&&cur.length)flush();cur.push({t:cl,b:tk.b});cw+=c1}}
+  if(cur.length||!lines.length)flush();return lines}
+const okc=c=>(typeof c==='string'&&/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c.trim()))?c.trim():null;
+const PFX=/^(\(?(?:\d{1,3}|[a-zA-Z]|[ivxIVX]{1,4}|[၀-၉]{1,3})[\.\)၊။]|[•●▪◦\-–])\s+/;
+function textBlock(ctx,text,x,y,w,lhpx,align,bold,draw,color){
+  const plain=String(text).replace(/\*\*/g,''),fs=fsFor(plain,lhpx),fnt=b=>`${b?'700 ':''}${fs}px ${FONT}`;
+  const left=!align||align==='left';
+  // numbered / bulleted lines: number in its own column, wrapped text keeps the same left edge
+  const pars=String(text).replace(/\r/g,'').split('\n').map(par=>{const m=left&&par.replace(/^\*\*(?=\S)/,'').match(PFX);return m?{pre:m[1],body:par.replace(/^\*\*(?=\S)/,'').slice(m[0].length)}:{pre:null,body:par}});
+  let ind=0;for(const q of pars)if(q.pre){ctx.font=fnt(bold);ind=Math.max(ind,ctx.measureText(q.pre).width)}
+  ind=ind?Math.min(ind+fs*.6,w*.35):0;
+  const lines=[];for(const q of pars){wrapRuns(ctx,q.body,q.pre?w-ind:w,fs,bold).forEach((ln,k)=>lines.push({ln,dx:q.pre?ind:0,pre:k===0?q.pre:null}))}
+  if(draw){ctx.textAlign='left';ctx.fillStyle=okc(color)||'#111';
+    lines.forEach((L,i)=>{const yy=y+i*lhpx+lhpx*.74,ww=w-L.dx;
+      if(L.pre){ctx.font=fnt(bold);ctx.fillText(L.pre,x,yy)}
+      let lw=0;L.ln.forEach(r=>{ctx.font=fnt(r.b);r.w=ctx.measureText(r.t).width;lw+=r.w});
+      let px=x+L.dx+(align==='center'?(ww-lw)/2:align==='right'?ww-lw:0);
+      L.ln.forEach(r=>{ctx.font=fnt(r.b);ctx.fillText(r.t,px,yy);px+=r.w})})}
+  return lines.length*lhpx}
+const _rb=new Map();
+/* tighten a figure box to the real drawing: drop partly-cut neighbouring text lines, trim blank margins */
+function refineBox(scan,box,lhS,noBand){
+  lhS=lhS||.0125*scan.height;const key=box.join(',')+'|'+Math.round(lhS)+(noBand?'t':'');if(_rb.has(key))return _rb.get(key);
+  const SW=scan.width,SH=scan.height;
+  const X0=Math.max(0,Math.floor((box[0]-.004)*SW)),Y0=Math.max(0,Math.floor((box[1]-.004)*SH)),X1=Math.min(SW,Math.ceil((box[2]+.004)*SW)),Y1=Math.min(SH,Math.ceil((box[3]+.004)*SH));
+  const w=X1-X0,h=Y1-Y0;let res=[Math.max(0,box[0]),Math.max(0,box[1]),Math.min(1,box[2]),Math.min(1,box[3])];
+  if(w>12&&h>12){
+    const d=scan.getContext('2d').getImageData(X0,Y0,w,h).data,gr=new Uint8Array(w*h);
+    for(let i=0,j=0;i<w*h;i++,j+=4)gr[i]=.299*d[j]+.587*d[j+1]+.114*d[j+2];
+    const th=Math.min(180,otsu(gr,w*h)*.85),ink=i=>gr[i]<th;
+    const rowInk=new Int32Array(h),colInk=new Int32Array(w);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(ink(y*w+x)){rowInk[y]++;colInk[x]++}
+    const br=y=>rowInk[y]<=Math.max(2,w*.012),bc=x=>colInk[x]<=Math.max(2,h*.012);
+    let t=0,b=h-1,l=0,r=w-1;
+    while(t<h&&br(t))t++;while(b>t&&br(b))b--;
+    if(b>t){
+      const tt=t,bb=b,lim=.22;
+      if(tt===0){let k=t;while(k<h*lim&&!br(k))k++;if(k<h*lim){t=k;while(t<b&&br(t))t++}}
+      if(bb===h-1){let k=b;while(k>h*(1-lim)&&!br(k))k--;if(k>h*(1-lim)){b=k;while(b>t&&br(b))b--}}
+      if((b-t)*1<(bb-tt)*.55){t=tt;b=bb}
+      // drop wide, thin bands at the top/bottom: they are lines of ordinary text next to the drawing
+      {const bands=[];let st=-1;for(let y=t;y<=b+1;y++){const blank=y>b||br(y);if(!blank&&st<0)st=y;if(blank&&st>=0){bands.push([st,y-1]);st=-1}}
+        if(!noBand&&bands.length>1){const ext=bd=>{let mn=w,mx=0;for(let y=bd[0];y<=bd[1];y++)for(let x=0;x<w;x++)if(ink(y*w+x)){if(x<mn)mn=x;if(x>mx)mx=x}return mx-mn};
+          const tall=Math.max(...bands.map(q=>q[1]-q[0]+1)),bad=q=>(q[1]-q[0]+1)<=lhS*1.7&&(q[1]-q[0]+1)<tall*.5&&ext(q)>=w*.45;
+          while(bands.length>1&&bad(bands[0]))bands.shift();
+          while(bands.length>1&&bad(bands[bands.length-1]))bands.pop();
+          t=bands[0][0];b=bands[bands.length-1][1]}}
+      colInk.fill(0);for(let y=t;y<=b;y++)for(let x=0;x<w;x++)if(ink(y*w+x))colInk[x]++;
+      const bc2=x=>colInk[x]<=Math.max(1,(b-t+1)*.004);
+      while(l<w&&bc2(l))l++;while(r>l&&bc2(r))r--;
+      const l0=l,r0=r;
+      if(l0===0){let k=l;while(k<w*.2&&!bc2(k))k++;if(k<w*.2){l=k;while(l<r&&bc2(l))l++}}
+      if(r0===w-1){let k=r;while(k>w*.8&&!bc2(k))k--;if(k>w*.8){r=k;while(r>l&&bc2(r))r--}}
+      if((r-l)<(r0-l0)*.55){l=l0;r=r0}
+      const pad=4;
+      res=[Math.max(0,X0+l-pad)/SW,Math.max(0,Y0+t-pad)/SH,Math.min(SW,X0+r+pad)/SW,Math.min(SH,Y0+b+pad)/SH]}}
+  _rb.set(key,res);return res}
+/* turn grey/dark-tinted paper inside a picture white; coloured parts and dark lines stay */
+function whitenBg(c){
+  const W=c.width,H=c.height,x=c.getContext('2d'),d=x.getImageData(0,0,W,H),p=d.data,N=W*H,h=new Uint32Array(256);let n=0;
+  for(let i=0,j=0;i<N;i++,j+=4){const mx=Math.max(p[j],p[j+1],p[j+2]),mn=Math.min(p[j],p[j+1],p[j+2]);if(mx-mn<38){h[((p[j]+p[j+1]+p[j+2])/3)|0]++;n++}}
+  if(n<N*.1)return;
+  let acc=0,bg=255;for(let i=0;i<256;i++){acc+=h[i];if(acc>=n*.8){bg=i;break}}
+  if(bg<80)return;
+  for(let i=0,j=0;i<N;i++,j+=4){const mx=Math.max(p[j],p[j+1],p[j+2]),mn=Math.min(p[j],p[j+1],p[j+2]);if(mx-mn>=38)continue;
+    const r=((p[j]+p[j+1]+p[j+2])/3)/bg;let t=(r-.5)/.22;t=t<0?0:t>1?1:t;t=t*t*(3-2*t);if(t<=0)continue;
+    p[j]+=(255-p[j])*t;p[j+1]+=(255-p[j+1])*t;p[j+2]+=(255-p[j+2])*t}
+  x.putImageData(d,0,0)}
+function fitLh(ctx,text,w,lh,bold){const t=String(text||'').replace(/\*\*/g,'');if(t.length>18||t.includes('\n'))return lh;
+  let k=1;while(k>.52){const fs=fsFor(t,lh*k);ctx.font=`${bold?'700 ':''}${fs}px ${FONT}`;if(ctx.measureText(t).width<=w)break;k-=.12}return lh*k}
+/* compact flow: drop the empty gaps of the original, use even page margins */
+function normalizeLayout(L){
+  L.blocks=(L.blocks||[]).filter(b=>!(b.type==='figure'&&Array.isArray(b.box)&&(b.box[2]<.14||b.box[0]>.95||(b.box[2]-b.box[0])<.04)));
+  const bl=L.blocks,ext=b=>b.type==='figure'&&Array.isArray(b.box)?[+b.box[0],+b.box[2]]:(b.type==='table'&&Array.isArray(b.box)&&b.box.length===4?[+b.x||+b.box[0],(+b.x||+b.box[0])+(+b.w||b.box[2]-b.box[0])]:[+b.x||.08,(+b.x||.08)+(+b.w||.8)]);
+  let mn=1,mx=0;for(const b of bl){const [l,r]=ext(b);if(l<mn)mn=l;if(r>mx)mx=Math.min(1,r)}
+  const span=mx-mn;if(!(span>.2))return L;const M=.07,k=Math.max(.9,Math.min(1.4,(1-2*M)/span));
+  for(const b of bl){const [l]=ext(b),nx=M+(l-mn)*k;
+    if(b.type==='figure'||(b.type==='table'&&Array.isArray(b.box)))b.px=nx;
+    if(b.type==='text'||b.type==='table'){b.x=nx;b.w=(+b.w||.8)*k}}
+  return L}
+function runLayout(ctx,layout,scan,W,H0,sc,draw,target,opt){
+  opt=opt||{};const SW=scan.width,SH=scan.height,top=opt.flow?Math.round(W*.05):Math.round(H0*.02),placed=[];let endY=0,uid=0,rowOrig=null,rowY=0;
+  const floorY=(x0,x1)=>{let m=top;for(const q of placed)if(x0<q.x1-1&&x1>q.x0+1&&q.b>m)m=q.b;return m};
+  const put=(x0,x1,y0,bt,id,cut)=>{placed.push({x0,x1,y0,b:bt,id});if(bt>endY)endY=bt;if(opt.cuts&&cut!==false)opt.cuts.push({y:bt,id:0,line:null})};
+  let curLh=.0125*SH;
+  const fig=(box,x,y,maxW,noBand,dr)=>{const q=refineBox(scan,box.map(Number),curLh,noBand),sw=(q[2]-q[0])*SW,sh=(q[3]-q[1])*SH;if(!(sw>4&&sh>4))return{w:0,h:0};
+    let dw=sw*sc,dh=sh*sc;if(maxW&&dw>maxW){dh*=maxW/dw;dw=maxW}
+    if(draw&&dr!==false){const tw=Math.max(1,Math.round(dw)),th=Math.max(1,Math.round(dh)),tc=document.createElement('canvas');tc.width=tw;tc.height=th;
+      tc.getContext('2d').drawImage(scan,q[0]*SW,q[1]*SH,sw,sh,0,0,tw,th);whitenBg(tc);target.drawImage(tc,x,y)}
+    return{w:dw,h:dh}};
+  const cparts=c=>{if(Array.isArray(c.parts))return c.parts;const p=[];if(String(c.text||'').trim())p.push({text:c.text,bold:c.bold,align:c.align});
+    if(c.table)p.push({table:c.table});if(Array.isArray(c.fig))p.push({fig:c.fig});return p};
+  // table (also used for tables nested inside a cell)
+  const LT=(tb,x,y0,tw,lhpx,dr,id,isTop)=>{
+    const D=dr&&draw,rows=tb.rows||[],nc=Math.max(1,(tb.cols||[]).length||Math.max(1,...rows.map(r=>r.length)));
+    let cf=(tb.cols&&tb.cols.length)?tb.cols.map(Number):Array(nc).fill(1/nc);const cs0=cf.reduce((a,v)=>a+v,0)||1;cf=cf.map(v=>v/cs0);
+    const cx=[0];cf.forEach(v=>cx.push(cx[cx.length-1]+v*tw));
+    const pad=Math.max(6,lhpx*.3),occ=[],cells=[];
+    rows.forEach((row,ri)=>{occ[ri]=occ[ri]||[];let ci=0;
+      for(const raw of row){const c=typeof raw==='string'?{text:raw}:raw||{};while(occ[ri][ci])ci++;
+        if(ci>=nc)break;
+        const rs=Math.max(1,+c.rs||1),cs=Math.max(1,Math.min(nc-ci,+c.cs||1));
+        for(let r=0;r<rs;r++){occ[ri+r]=occ[ri+r]||[];for(let k=0;k<cs;k++)occ[ri+r][ci+k]=true}
+        cells.push({c,ri,ci,rs,cs});ci+=cs}});
+    const nr=rows.length,rh=Array(nr).fill(lhpx+2*pad),sub=Array(nr+1).fill(false);
+    const empty=c=>!cparts(c).length;
+    for(let r=1;r<nr;r++){const c0=cells.find(q=>q.ri===r&&q.ci===0);
+      if(c0&&c0.rs===1&&empty(c0.c)&&cells.some(q=>q.ri===r&&q.ci>0))sub[r]=true}
+    const content=(c,X,Y,w,d2)=>{let y=Y;
+      for(const pt of cparts(c)){
+        if(String(pt.text||'').trim()){const l2=fitLh(ctx,pt.text,w,lhpx,pt.bold||c.bold);y+=textBlock(ctx,pt.text,X,y,w,l2,pt.align||c.align,pt.bold||c.bold,d2,pt.color||c.color)}
+        else if(pt.table){const nt=pt.table;
+          if(opt.tableImg&&Array.isArray(nt.box)){const f=fig(nt.box,X,y,w,true,d2);y+=f.h+pad*.5}
+          else{const nbw=Array.isArray(nt.box)?(nt.box[2]-nt.box[0])*W:(+nt.w>0?nt.w*W:w*.7),nw=Math.max(60,Math.min(w,nbw)),nl=Math.max(26,(+nt.lh>0?nt.lh*H0:lhpx*.92));y=LT(nt,X,y,nw,nl,d2,0,false).bottom+pad*.6}}
+        else if(Array.isArray(pt.fig)){const f=fig(pt.fig,X,y,w,false,d2);y+=f.h+pad*.6}}
+      return y-Y};
+    const need=cl=>content(cl.c,0,0,cx[cl.ci+cl.cs]-cx[cl.ci]-2*pad,false)+2*pad;
+    cells.filter(q=>q.rs===1).forEach(q=>{rh[q.ri]=Math.max(rh[q.ri],need(q))});
+    cells.filter(q=>q.rs>1).forEach(q=>{const last=Math.min(nr-1,q.ri+q.rs-1);let have=0;for(let r=q.ri;r<=last;r++)have+=rh[r];const n=need(q);if(n>have)rh[last]+=n-have});
+    const ry=[y0];rh.forEach(h=>ry.push(ry[ry.length-1]+h));
+    if(isTop&&opt.cuts)for(let r=1;r<nr;r++){if(!cells.some(q=>q.ri<r&&q.ri+q.rs>r))opt.cuts.push({y:ry[r],id,line:[x,x+tw]})}
+    if(D){ctx.strokeStyle='#222';ctx.lineWidth=2;
+      const ln=(x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()};
+      for(const q of cells){const last=Math.min(nr-1,q.ri+q.rs-1),X=x+cx[q.ci],Y=ry[q.ri],Wc=cx[q.ci+q.cs]-cx[q.ci],Hc=ry[last+1]-ry[q.ri];
+        if(okc(q.c.bg)){ctx.fillStyle=okc(q.c.bg);ctx.fillRect(X,Y,Wc,Hc)}
+        if(!sub[q.ri])ln(X,Y,X+Wc,Y);if(!sub[last+1])ln(X,Y+Hc,X+Wc,Y+Hc);ln(X,Y,X,Y+Hc);ln(X+Wc,Y,X+Wc,Y+Hc);
+        content(q.c,X+pad,Y+pad,Wc-2*pad,true)}}
+    return {bottom:ry[nr]}};
+  for(const b of layout.blocks||[]){
+    curLh=(+b.lh||.0125)*SH;const lhpx=Math.max(34,Math.min(110,(+b.lh||.0125)*H0)),x=Math.max(0,(+b.x||.08))*W,by=(+b.y||0)*H0,id=++uid;
+    if(b.type==='figure'&&Array.isArray(b.box)){const bx=b.box.map(Number),q=refineBox(scan,bx,curLh),fx=(b.px!=null?b.px:q[0])*W,mw=Math.max(10,W-fx-W*.02);
+      const dw0=(q[2]-q[0])*SW*sc,dwv=Math.min(dw0,mw),y0=opt.flow?(rowOrig=null,(endY?endY+lhpx*.5:top)):Math.max(floorY(fx,fx+dwv),q[1]*H0);
+      const f=fig(bx,fx,y0,mw);put(fx,fx+f.w,y0,y0+f.h+lhpx*.3,id);continue}
+    if(b.type==='text'){let w=Math.min(W-x-W*.03,(+b.w||.8)*W),xx=x;
+      if(b.align==='center'){const plain=String(b.text||'').replace(/\*\*/g,''),fs=fsFor(plain,lhpx),cm=x+w/2;
+        ctx.font=`${b.bold?'700 ':''}${fs}px ${FONT}`;const tw0=Math.max(...plain.split('\n').map(l=>ctx.measureText(l).width));
+        w=Math.min(W*.84,Math.max(w,tw0+24));xx=Math.abs(cm/W-.5)<.12?W/2-w/2:cm-w/2}
+      let y0;if(opt.flow){if(rowOrig!==null&&Math.abs(by-rowOrig)<lhpx*.9)y0=rowY;else{y0=endY?endY+lhpx*.3:top;rowOrig=by;rowY=y0}}else y0=Math.max(floorY(xx,xx+w),by);
+      const h=textBlock(ctx,b.text||'',xx,y0,w,lhpx,b.align,b.bold,draw,b.color);put(xx,xx+w,y0,y0+h+lhpx*.25,id);continue}
+    if(b.type==='table'&&opt.tableImg&&Array.isArray(b.box||null)){const bx=b.box.map(Number),fx=(b.px!=null?b.px:bx[0])*W,mw=Math.max(10,W-fx-W*.02),y0=opt.flow?(rowOrig=null,(endY?endY+lhpx*.5:top)):Math.max(floorY(fx,fx+(bx[2]-bx[0])*W),bx[1]*H0);
+      const f=fig(bx,fx,y0,mw,true);put(fx,fx+f.w,y0,y0+f.h+lhpx*.3,id);continue}
+    if(b.type==='table'&&Array.isArray(b.rows)){
+      const tw=Math.min(W-x-W*.02,(+b.w||.8)*W),y0=opt.flow?(rowOrig=null,(endY?endY+lhpx*.5:top)):Math.max(floorY(x,x+tw),by);
+      const r=LT(b,x,y0,tw,lhpx,true,id,true);put(x,x+tw,y0,r.bottom+lhpx*.5,id);continue}
+  }
+  if(opt.rects)opt.rects.push(...placed);
+  return endY}
+function paginate(c,cuts,rects,PH,W){
+  const total=c.height,pad=Math.round(PH*.03),pages=[];let start=0,k=0,prev=null;
+  const valid=cu=>!rects.some(r=>r.id!==cu.id&&r.y0<cu.y-1&&r.b>cu.y+1);
+  while(start<total-3){
+    const off=k?pad:0,cap=PH-off-Math.round(pad*.7);let end=start+cap,line=null;
+    if(end>=total)end=total;else{
+      const cand=cuts.filter(cu=>cu.y>start+cap*.35&&cu.y<=start+cap&&valid(cu)).sort((a,b)=>b.y-a.y)[0];
+      if(cand){end=Math.round(cand.y);line=cand.line}}
+    const q=document.createElement('canvas');q.width=W;q.height=PH;const qx=q.getContext('2d');qx.fillStyle='#fff';qx.fillRect(0,0,W,PH);
+    qx.drawImage(c,0,start,W,end-start,0,off,W,end-start);
+    qx.strokeStyle='#222';qx.lineWidth=2;
+    if(prev){qx.beginPath();qx.moveTo(prev[0],off+1);qx.lineTo(prev[1],off+1);qx.stroke()}
+    if(line){qx.beginPath();qx.moveTo(line[0],off+end-start-1);qx.lineTo(line[1],off+end-start-1);qx.stroke()}
+    pages.push(q);prev=line;start=end;k++}
+  return pages.length?pages:[c]}
+async function rebuildLayout(scan,fmt,tableImg,flow){
+  const layout=await layoutAI(scan);
+  if(!layout||!Array.isArray(layout.blocks)||!layout.blocks.length)throw new Error('Layout မရပါ — ပုံပိုကြည်အောင် ပြန်စမ်းပါ');
+  if(flow)normalizeLayout(layout);
+  const land=fmt==='a4l',W=land?1754:1654,sc=W/scan.width,H0=Math.round(scan.height*sc),PH=fmt==='orig'?H0:Math.round(W*(land?.7071:1.4142));
+  try{await document.fonts.load('36px "Noto Sans Myanmar"','မြန်မာ');await document.fonts.ready}catch(e){}
+  const m=document.createElement('canvas');m.width=W;m.height=10;const mx=m.getContext('2d');
+  const cuts=[],rects=[];
+  const end=runLayout(mx,layout,scan,W,H0,sc,false,null,{tableImg,cuts,rects,flow});
+  const total=Math.max(fmt==='orig'?H0:PH,Math.round(end+H0*.03)),c=document.createElement('canvas');c.width=W;c.height=total;
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W,total);x.fillStyle='#111';x.textBaseline='alphabetic';
+  runLayout(x,layout,scan,W,H0,sc,true,x,{tableImg,flow});
+  if(fmt==='orig'||total<=PH+4)return [c];
+  return paginate(c,cuts,rects,PH,W)}
+$('mkLayout').onclick=async()=>{
+  if(!pages.length){setStatus('ဓာတ်ပုံ အရင်ရွေးပါ','err');return}
+  $('mkLayout').disabled=true;const box=$('imgOut');box.innerHTML='';let outN=0,stop=null;const T0=Date.now();
+  try{for(let i=0;i<pages.length;i++){
+      stop=timed(sec=>`စာမျက်နှာ ${i+1}/${pages.length} layout ဖတ်နေပါတယ်... ${sec} s`);
+      const cvs=await rebuildLayout(toCanvas(pages[i],2200,false),$('pageFmt').value,$('tblImg').checked,!$('keepSpace').checked);
+      cvs.forEach(cv=>{const k=++outN,w=document.createElement('div'),im=document.createElement('img');
+        im.src=cv.toDataURL('image/png');im.alt='စာမျက်နှာ '+k;im.style.cssText='width:100%;border:1px solid var(--line);border-radius:8px;display:block;background:#fff';
+        const b=document.createElement('button');b.textContent=`💾 စာမျက်နှာ ${k} သိမ်းမယ်`;b.style.cssText='width:100%;margin-top:6px';
+        b.onclick=()=>cv.toBlob(bl=>saveFile(bl,`retyped-page-${k}.png`),'image/png');
+        w.append(im,b);box.appendChild(w)});
+      stop();stop=null}
+    setStatus(`ပြန်ရိုက်ပြီးပါပြီ ✓ (စုစုပေါင်း ${Math.round((Date.now()-T0)/100)/10} s) စာလုံးမှားရင် STEP 3 မှာ ပြင်ပြီး "စာသားသက်သက်" ကိုလည်း သုံးနိုင်ပါတယ်`,'ok');box.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){if(stop)stop();setStatus('⚠ '+e.message,'err')}
+  finally{$('mkLayout').disabled=false}
+};
+
+$('mkImg').onclick=async()=>{
+  const t=$('out').value.trim();if(!t){setStatus('စာသား အရင်ဖတ်ပါ','err');return}
+  $('mkImg').disabled=true;const box=$('imgOut');box.innerHTML='';
+  try{const cs=await renderPagesImg(t,+$('imgSize').value,$('imgTheme').value);
+    cs.forEach((cv,i)=>{const w=document.createElement('div');
+      const im=document.createElement('img');im.src=cv.toDataURL('image/png');im.alt='စာမျက်နှာ '+(i+1);im.style.cssText='width:100%;border:1px solid var(--line);border-radius:8px;display:block';
+      const b=document.createElement('button');b.textContent=`💾 စာမျက်နှာ ${i+1} သိမ်းမယ်`;b.style.cssText='width:100%;margin-top:6px';
+      b.onclick=()=>cv.toBlob(bl=>saveFile(bl,`myanmar-text-${i+1}.png`),'image/png');
+      w.append(im,b);box.appendChild(w)});
+    setStatus(`ပုံ ${cs.length} ပုဒ် ထုတ်ပြီးပါပြီ ✓ (ပုံကို ကြာကြာနှိပ်ရင်လည်း သိမ်းလို့ရ)`,'ok');box.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){setStatus('⚠ ပုံထုတ်လို့မရပါ: '+e.message,'err')}
+  finally{$('mkImg').disabled=false}
+};
+
+/* ---------- symbol palette: tap to insert at cursor ---------- */
+const SYMS='² ³ ⁿ ⁻¹ ₀ ₁ ₂ ₃ ₙ √ ∛ π ∑ ∏ ∫ ∞ ± × ÷ = ≠ ≈ ≡ ≤ ≥ < > ° ′ ″ % ‰ ½ ⅓ ¼ ¾ ⁄ ( ) [ ] { } | ∈ ∉ ∪ ∩ ⊂ ⊆ ∅ ∀ ∃ ∴ ∵ ∠ ⊥ ∥ △ ∝ → ← ⇌ ⇒ ⇔ ↑ ↓ Δ ∇ ∂ θ α β γ δ ε λ μ ρ σ τ φ ω Ω Σ Π Φ Ψ Λ'.split(' ');
+(()=>{const box=$('syms');if(!box)return;
+  SYMS.forEach(sy=>{const b=document.createElement('button');b.type='button';b.textContent=sy;
+    b.addEventListener('mousedown',e=>e.preventDefault());
+    b.onclick=()=>{const t=$('out'),a=t.selectionStart??t.value.length,z=t.selectionEnd??a;
+      t.value=t.value.slice(0,a)+sy+t.value.slice(z);t.selectionStart=t.selectionEnd=a+sy.length;upd()};
+    box.appendChild(b)})})();
+</script>
+</body>
+</html>
