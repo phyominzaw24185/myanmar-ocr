@@ -393,17 +393,19 @@ async function gemini(parts,cfg){
     }
   }
 }
+let noThink=true;
 async function geminiOnce(parts,cfg,retried){
   const key=LS.get('gkey','');if(!key) throw new Error('Settings မှာ Gemini API Key အရင်ထည့်ပါ');
   const model=getModel();
   let r;
   try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
     method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
-    body:JSON.stringify({contents:[{parts}],generationConfig:Object.assign({temperature:0},cfg||{})})});
+    body:JSON.stringify({contents:[{parts}],generationConfig:Object.assign({temperature:0},noThink?{thinkingConfig:{thinkingBudget:0}}:{},cfg||{})})});
   }catch(e){throw new Error('Google (Gemini) ကို ချိတ်ဆက်မရပါ။ ဒီဖိုင်ကို preview/ဖိုင်ကြည့်တဲ့နေရာမှာ ဖွင့်ထားရင် network ပိတ်ထားတတ်ပါတယ်။ Netlify လို website အဖြစ်တင်ပြီး Safari/Chrome မှာ ဖွင့်ပါ။ (internet စစ်ပါ၊ VPN ရှိရင် ပိတ်ပါ)')}
   const j=await r.json().catch(()=>({}));
   if(!r.ok){const m=(j.error&&j.error.message)||('HTTP '+r.status);
     const alt=!retried&&/no longer available|not found|not supported/i.test(m)&&(m.match(/use\s+models\/([\w.\-]+)/i)||[])[1];
+    if(noThink&&r.status===400&&/thinking/i.test(m)){noThink=false;return geminiOnce(parts,cfg,retried)}
     if(alt&&alt!==model){LS.set('gmodel',alt);if($('model'))$('model').value=alt;return geminiOnce(parts,cfg,true)}
     if(r.status===503||/high demand|overloaded|UNAVAILABLE/i.test(m)){const e=new Error('Gemini လူအရမ်းများနေပါတယ် — ခဏနေမှ ပြန်စမ်းပါ၊ ဒါမှမဟုတ် Settings မှာ အခြား model ပြောင်းပါ');e.busy=true;throw e}
     throw new Error(r.status===400&&/API key/i.test(m)?'API Key မမှန်ပါ':r.status===429?'ခဏစောင့်ပြီး ပြန်စမ်းပါ (quota ပြည့်နေ)':m)}
@@ -421,7 +423,7 @@ async function ocrGemini(pg){
 /* split a page into whitespace-aligned strips and read each at high resolution */
 function pageStrips(pg){
   const c=toCanvas(pg,3000,false),W=c.width,H=c.height,x=c.getContext('2d');
-  const target=Math.round(W*0.5);
+  const target=Math.round(W*0.8);
   if(H<=target*1.35) return [c];
   const d=x.getImageData(0,0,W,H).data,ink=new Float32Array(H);
   for(let y=0;y<H;y++){let n=0;for(let i=0;i<W;i+=3){const o=(y*W+i)*4;if(.3*d[o]+.59*d[o+1]+.11*d[o+2]<110)n++}ink[y]=n}
@@ -438,13 +440,17 @@ const PART_NOTE='\n\nမှတ်ချက်: ဒီပုံက စာမျ�
 async function readPage(pg,onPartial){
   const precise=$('precise')&&$('precise').checked,strips=precise?pageStrips(pg):null;
   if(!strips||strips.length<2) return await ocrOne(pg,onPartial);
-  const res=[];
-  for(let k=0;k<strips.length;k++){
-    setStatus(`အပိုင်း ${k+1}/${strips.length} ဖတ်နေ...`);
-    const t=await ocrCanvas(strips[k],PART_NOTE,u=>onPartial&&onPartial([...res,u].join('\n')));
-    if(t) res.push(t);
+  const res=new Array(strips.length).fill(''),total=strips.length;let next=0,done=0,fatal=null;
+  const show=()=>onPartial&&onPartial(res.filter(Boolean).join('\n'));
+  async function worker(){
+    while(!fatal){const k=next++;if(k>=total)return;
+      try{res[k]=await ocrCanvas(strips[k],PART_NOTE,null);done++;setStatus(`အပိုင်း ${done}/${total} ဖတ်ပြီး...`);show()}
+      catch(e){fatal=e}}
   }
-  return res.join('\n').trim();
+  setStatus(`အပိုင်း ${total} ခု တပြိုင်နက် ဖတ်နေ...`);
+  await Promise.all(Array.from({length:Math.min(4,total)},worker));
+  if(fatal) throw fatal;
+  return res.filter(Boolean).join('\n').trim();
 }
 async function ocrCanvas(cv,note,onText){
   const b64=cv.toDataURL('image/jpeg',.92).split(',')[1];
