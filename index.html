@@ -108,7 +108,7 @@ details summary{cursor:pointer;font-weight:600}
   <div style="font-weight:700">စာဖတ်မယ်</div>
   <label for="mathMode">သင်္ချာ/သိပ္ပံ သင်္ကေတ ရေးပုံ</label>
   <select id="mathMode"><option value="uni">Unicode သင်္ကေတ (√ π x² ∑) – ကူးလို့လွယ်</option><option value="tex">LaTeX ($\sqrt{x}$, $x^2$)</option></select>
-  <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="precise" checked> တိကျစွာဖတ် (စာမျက်နှာကို အပိုင်းခွဲ ချဲ့ဖတ် — ပိုမှန်၊ နည်းနည်းကြာ)</label>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="precise"> တိကျစွာဖတ် (အပိုင်းခွဲ ချဲ့ဖတ် — ပိုမှန်၊ ပိုကြာ။ မြန်မြန်လိုရင် ပိတ်ထားပါ)</label>
   <button id="go" disabled style="width:100%;margin-top:8px">✨ စာသားဖတ်မယ်</button>
   <div class="prog" id="prog"><i id="bar"></i></div>
   <div id="status"></div>
@@ -383,10 +383,10 @@ const MATH_TEX=`
 const MATH_END=`
 - ရလဒ်မှာ ရေးထားတဲ့ စာသားသက်သက်သာ ပေးပါ။ ရှင်းလင်းချက်၊ markdown၊ code block မထည့်ပါနဲ့။`;
 function buildPrompt(){return PROMPT_BASE+(($('mathMode')&&$('mathMode').value==='tex')?MATH_TEX:MATH_UNI)+MATH_END}
-async function gemini(parts,cfg){
+async function gemini(parts,cfg,onText){
   const wait=[3,6,12,20];
   for(let i=0;;i++){
-    try{return await geminiOnce(parts,cfg)}
+    try{return await geminiOnce(parts,cfg,false,onText)}
     catch(e){
       if(!e.busy||i>=wait.length) throw e;
       for(let k=wait[i];k>0;k--){setStatus(`Gemini လူများနေလို့ ${k} စက္ကန့်စောင့်ပြီး ပြန်စမ်းမယ် (${i+1}/${wait.length})...`);await new Promise(r=>setTimeout(r,1000))}
@@ -394,28 +394,39 @@ async function gemini(parts,cfg){
   }
 }
 let noThink=true;
-async function geminiOnce(parts,cfg,retried){
+async function geminiOnce(parts,cfg,retried,onText){
   const key=LS.get('gkey','');if(!key) throw new Error('Settings မှာ Gemini API Key အရင်ထည့်ပါ');
   const model=getModel();
   let r;
-  try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
+  try{r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:${onText?'streamGenerateContent?alt=sse':'generateContent'}`,{
     method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
     body:JSON.stringify({contents:[{parts}],generationConfig:Object.assign({temperature:0},noThink?{thinkingConfig:{thinkingBudget:0}}:{},cfg||{})})});
   }catch(e){throw new Error('Google (Gemini) ကို ချိတ်ဆက်မရပါ။ ဒီဖိုင်ကို preview/ဖိုင်ကြည့်တဲ့နေရာမှာ ဖွင့်ထားရင် network ပိတ်ထားတတ်ပါတယ်။ Netlify လို website အဖြစ်တင်ပြီး Safari/Chrome မှာ ဖွင့်ပါ။ (internet စစ်ပါ၊ VPN ရှိရင် ပိတ်ပါ)')}
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok){const m=(j.error&&j.error.message)||('HTTP '+r.status);
+  let j={};
+  if(!r.ok||!onText) j=await r.json().catch(()=>({}));
+  if(!r.ok){
+    if(Array.isArray(j)) j=j[0]||{};const m=(j.error&&j.error.message)||('HTTP '+r.status);
     const alt=!retried&&/no longer available|not found|not supported/i.test(m)&&(m.match(/use\s+models\/([\w.\-]+)/i)||[])[1];
-    if(noThink&&r.status===400&&/thinking/i.test(m)){noThink=false;return geminiOnce(parts,cfg,retried)}
-    if(alt&&alt!==model){LS.set('gmodel',alt);if($('model'))$('model').value=alt;return geminiOnce(parts,cfg,true)}
+    if(noThink&&r.status===400&&/thinking/i.test(m)){noThink=false;return geminiOnce(parts,cfg,retried,onText)}
+    if(alt&&alt!==model){LS.set('gmodel',alt);if($('model'))$('model').value=alt;return geminiOnce(parts,cfg,true,onText)}
     if(r.status===503||/high demand|overloaded|UNAVAILABLE/i.test(m)){const e=new Error('Gemini လူအရမ်းများနေပါတယ် — ခဏနေမှ ပြန်စမ်းပါ၊ ဒါမှမဟုတ် Settings မှာ အခြား model ပြောင်းပါ');e.busy=true;throw e}
     throw new Error(r.status===400&&/API key/i.test(m)?'API Key မမှန်ပါ':r.status===429?'ခဏစောင့်ပြီး ပြန်စမ်းပါ (quota ပြည့်နေ)':m)}
+  if(onText){
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',acc='';
+    for(;;){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true}).replace(/\r\n/g,'\n');
+      let i;while((i=buf.indexOf('\n\n'))>=0){const ev=buf.slice(0,i);buf=buf.slice(i+2);
+        const m=ev.match(/^data:\s*(.*)$/m);if(!m)continue;
+        try{const o=JSON.parse(m[1]),c=o.candidates&&o.candidates[0];
+          if(c&&c.content&&c.content.parts){acc+=c.content.parts.map(p=>p.text||'').join('');onText(acc.replace(/^```\w*\n?/,''))}}catch(e){}}}
+    return acc.replace(/^```\w*\n?|```$/g,'').trim();
+  }
   const cand=j.candidates&&j.candidates[0];
   const t=cand&&cand.content&&cand.content.parts?cand.content.parts.map(p=>p.text||'').join(''):'';
   return t.replace(/^```\w*\n?|```$/g,'').trim();
 }
-async function ocrGemini(pg){
-  const b64=toCanvas(pg,2200,false).toDataURL('image/jpeg',.9).split(',')[1];
-  const t=await gemini([{text:buildPrompt()},{inline_data:{mime_type:'image/jpeg',data:b64}}]);
+async function ocrGemini(pg,onText){
+  const b64=toCanvas(pg,1800,false).toDataURL('image/jpeg',.82).split(',')[1];
+  const t=await gemini([{text:buildPrompt()},{inline_data:{mime_type:'image/jpeg',data:b64}}],null,onText);
   if(!t) throw new Error('စာ ရှာမတွေ့ပါ — ပုံပိုကြည်အောင် ပြန်ရိုက်ကြည့်ပါ');
   return t;
 }
@@ -456,7 +467,7 @@ async function ocrCanvas(cv,note,onText){
   const b64=cv.toDataURL('image/jpeg',.92).split(',')[1];
   return await gemini([{text:buildPrompt()+(note||'')},{inline_data:{mime_type:'image/jpeg',data:b64}}]);
 }
-async function ocrOne(pg){return await ocrGemini(pg)}
+async function ocrOne(pg,onPartial){return await ocrGemini(pg,onPartial)}
 /* ---------- OCR: Tesseract offline ---------- */
 let tessLoad=null;
 function loadTess(){
@@ -485,7 +496,7 @@ $('go').onclick=async()=>{
     const outs=[];let pgNo=1;stop=timed(sec=>`စာမျက်နှာ ${pgNo}/${pages.length} ဖတ်နေပါတယ်... ${sec} s`);
     for(let i=0;i<pages.length;i++){
       pgNo=i+1;setProg((i+.3)/pages.length);
-      const t=engine==='ai'?await readPage(pages[i]):await ocrTess(pages[i]);
+      const t=engine==='ai'?await readPage(pages[i],x=>{$('out').value=[...outs,pages.length>1?`--- စာမျက်နှာ ${i+1} ---\n${x}`:x].join('\n\n');upd()}):await ocrTess(pages[i]);
       outs.push(pages.length>1?`--- စာမျက်နှာ ${i+1} ---\n${t}`:t);
       $('out').value=outs.join('\n\n');upd();
     }
